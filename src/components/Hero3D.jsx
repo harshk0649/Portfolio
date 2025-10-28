@@ -238,7 +238,7 @@ const BorderElements = () => {
 
 const Hero3D = () => {
   return (
-    <div className="absolute inset-0 z-0">
+    <div className="absolute inset-0 z-10">
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
         <OrbitControls enableZoom={false} enablePan={false} enableRotate={true} autoRotate autoRotateSpeed={0.5} />
 
