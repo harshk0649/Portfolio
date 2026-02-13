@@ -50,19 +50,19 @@ const PROJECTS = [
         title: "SGF Portal",
         desc: "A full-stack project management system with role-based access control, task workflows, and secure backend architecture using Spring Boot and SQL.",
         type: "Full Stack / Backend",
-        image: "public/images/sgf.png"
+        image: "images/sgf.png"
     },
     {
         title: "EzzApply",
         desc: "Swipe-based job discovery platform inspired by Tinder. Built React frontend with backend API integration and job interaction tracking.",
         type: "Full Stack",
-        image: "public/images/ezzapply.png"
+        image: "images/ezzapply.png"
     },
     {
         title: "AI Image Generator",
         desc: "React-based AI tool integrated with OpenAI API to generate images from prompts with loading states and error handling.",
         type: "AI / Frontend",
-        image: "public/images/ai.png"
+        image: "images/ai.png"
     }
 ];
 
