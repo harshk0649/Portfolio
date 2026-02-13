@@ -97,13 +97,7 @@ const HighResCar = forwardRef(({ ...props }, ref) => {
 
 // --- Dense Environment Instances ---
 
-const Buildings = () => (
-    <Instances range={200} castShadow receiveShadow>
-        <RoundedBox args={[1, 1, 1]} radius={0.02} smoothness={2} />
-        <meshStandardMaterial color="#334155" roughness={0.2} metalness={0.3} />
-        <CityContext.Consumer>{(value) => value}</CityContext.Consumer>
-    </Instances>
-)
+// Buildings component removed due to CityContext error and it was unused
 
 const CityBlock = ({ position }) => {
     // Pro Voxel Buildings - varying sizes
@@ -119,10 +113,9 @@ const CityBlock = ({ position }) => {
                 <meshStandardMaterial color={Math.random() > 0.6 ? "#1e293b" : "#0f172a"} roughness={0.3} />
             </mesh>
 
-            {/* Glowing Windows - Pro look: random grid */}
             {Array.from({ length: Math.floor(height) }).map((_, y) => (
                 Array.from({ length: Math.floor(width / 1.5) }).map((__, x) => (
-                    Math.random() > 0.5 && (
+                    Math.random() > 0.8 && (
                         <mesh key={`${x}-${y}`} position={[
                             (x - width / 3) * 1.5,
                             y + 1,
@@ -362,8 +355,8 @@ const Experience = () => {
             <InfoBillboard
                 position={[20, 12, -480]}
                 rotation={[0, 1.2, 0]}
-                title="Lerning Era"
-                content="Strengthened fundamentals in system design, databases, and backend architecture "
+                title="Learning Era"
+                content="Strengthened fundamentals in system design, databases, and backend architecture."
             />
             <InfoBillboard
                 position={[45, 8, -660]}
