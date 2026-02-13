@@ -1,21 +1,20 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { ScrollControls, useScroll, Text, Float, PerspectiveCamera, Environment, Stars, Instance, Instances } from '@react-three/drei';
-import { Suspense, useRef, useMemo, useState, useEffect, forwardRef, createContext, useContext } from 'react';
+import { ScrollControls, useScroll, Text, Float, PerspectiveCamera, Environment, Stars, Instance, Instances, RoundedBox, useTexture } from '@react-three/drei';
+import { Suspense, useRef, useMemo, useState, useEffect, forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import * as THREE from 'three';
+import { useSpring, animated } from '@react-spring/three';
 
-// --- Procedural Assets ---
+// --- Pro Voxel Assets ---
 
 const HighResCar = forwardRef(({ ...props }, ref) => {
     // Car Group with Headlights attached
     const leftHeadlight = useRef();
     const rightHeadlight = useRef();
 
-    // Sync refs
     useFrame(() => {
         if (ref && ref.current && leftHeadlight.current && rightHeadlight.current) {
-            // Target the light far ahead
-            const target = new THREE.Vector3(0, 0, 20);
+            const target = new THREE.Vector3(0, 0, 30);
             leftHeadlight.current.target.position.copy(target);
             leftHeadlight.current.target.updateMatrixWorld();
             rightHeadlight.current.target.position.copy(target);
@@ -25,221 +24,234 @@ const HighResCar = forwardRef(({ ...props }, ref) => {
 
     return (
         <group ref={ref} {...props} dispose={null}>
-            {/* Chassis */}
-            <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-                <boxGeometry args={[2, 0.6, 4.5]} />
-                <meshStandardMaterial color="#b91c1c" metalness={0.8} roughness={0.2} envMapIntensity={1.5} />
-            </mesh>
+            {/* Chassis - Rounded for Premium Feel */}
+            <RoundedBox args={[2.2, 0.7, 4.8]} radius={0.1} smoothness={4} position={[0, 0.7, 0]} castShadow receiveShadow>
+                <meshStandardMaterial color="#991b1b" metalness={0.6} roughness={0.2} envMapIntensity={1.5} />
+            </RoundedBox>
 
-            {/* Upper Body / Cabin */}
-            <mesh position={[0, 1.2, -0.5]} castShadow receiveShadow>
-                <boxGeometry args={[1.8, 0.7, 2.5]} />
-                <meshStandardMaterial color="#991b1b" metalness={0.8} roughness={0.2} />
-            </mesh>
+            {/* Cabin */}
+            <RoundedBox args={[1.9, 0.8, 2.8]} radius={0.05} smoothness={4} position={[0, 1.35, -0.6]} castShadow receiveShadow>
+                <meshStandardMaterial color="#7f1d1d" metalness={0.6} roughness={0.2} />
+            </RoundedBox>
 
             {/* Windshield */}
-            <mesh position={[0, 1.2, 0.85]} rotation={[Math.PI / 6, 0, 0]}>
-                <planeGeometry args={[1.7, 0.8]} />
-                <meshStandardMaterial color="#93c5fd" transparent opacity={0.6} metalness={0.9} roughness={0.1} side={THREE.DoubleSide} />
+            <mesh position={[0, 1.3, 0.9]} rotation={[Math.PI / 5, 0, 0]}>
+                <planeGeometry args={[1.8, 0.9]} />
+                <meshStandardMaterial color="#93c5fd" transparent opacity={0.7} metalness={0.9} roughness={0} />
             </mesh>
 
             {/* Spoiler */}
-            <mesh position={[0, 1.2, -2.1]}>
-                <boxGeometry args={[2.2, 0.1, 0.6]} />
+            <RoundedBox args={[2.4, 0.1, 0.8]} radius={0.05} smoothness={4} position={[0, 1.4, -2.4]}>
+                <meshStandardMaterial color="#111" />
+            </RoundedBox>
+            <mesh position={[-0.9, 1.0, -2.4]}>
+                <cylinderGeometry args={[0.05, 0.05, 0.4]} />
                 <meshStandardMaterial color="#111" />
             </mesh>
-            <mesh position={[-0.8, 0.9, -2.1]}>
-                <cylinderGeometry args={[0.05, 0.05, 0.6]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
-            <mesh position={[0.8, 0.9, -2.1]}>
-                <cylinderGeometry args={[0.05, 0.05, 0.6]} />
+            <mesh position={[0.9, 1.0, -2.4]}>
+                <cylinderGeometry args={[0.05, 0.05, 0.4]} />
                 <meshStandardMaterial color="#111" />
             </mesh>
 
-            {/* Wheels */}
-            <group position={[-1.1, 0.4, 1.6]}>
-                <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                    <cylinderGeometry args={[0.45, 0.45, 0.6, 32]} />
-                    <meshStandardMaterial color="#111" roughness={0.9} />
-                </mesh>
-                <mesh rotation={[0, 0, Math.PI / 2]} position={[-0.31, 0, 0]}>
-                    <cylinderGeometry args={[0.25, 0.25, 0.05, 16]} />
-                    <meshStandardMaterial color="#ddd" metalness={0.8} />
-                </mesh>
-            </group>
-            <group position={[1.1, 0.4, 1.6]}>
-                <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                    <cylinderGeometry args={[0.45, 0.45, 0.6, 32]} />
-                    <meshStandardMaterial color="#111" roughness={0.9} />
-                </mesh>
-                <mesh rotation={[0, 0, Math.PI / 2]} position={[0.31, 0, 0]}>
-                    <cylinderGeometry args={[0.25, 0.25, 0.05, 16]} />
-                    <meshStandardMaterial color="#ddd" metalness={0.8} />
-                </mesh>
-            </group>
-            <group position={[-1.1, 0.4, -1.8]}>
-                <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                    <cylinderGeometry args={[0.45, 0.45, 0.7, 32]} />
-                    <meshStandardMaterial color="#111" roughness={0.9} />
-                </mesh>
-                <mesh rotation={[0, 0, Math.PI / 2]} position={[-0.36, 0, 0]}>
-                    <cylinderGeometry args={[0.25, 0.25, 0.05, 16]} />
-                    <meshStandardMaterial color="#ddd" metalness={0.8} />
-                </mesh>
-            </group>
-            <group position={[1.1, 0.4, -1.8]}>
-                <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                    <cylinderGeometry args={[0.45, 0.45, 0.7, 32]} />
-                    <meshStandardMaterial color="#111" roughness={0.9} />
-                </mesh>
-                <mesh rotation={[0, 0, Math.PI / 2]} position={[0.36, 0, 0]}>
-                    <cylinderGeometry args={[0.25, 0.25, 0.05, 16]} />
-                    <meshStandardMaterial color="#ddd" metalness={0.8} />
-                </mesh>
-            </group>
+            {/* Wheels - Detailed */}
+            {[[-1.2, 1.8], [1.2, 1.8], [-1.2, -1.8], [1.2, -1.8]].map((pos, i) => (
+                <group key={i} position={[pos[0], 0.45, pos[1]]}>
+                    <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
+                        <cylinderGeometry args={[0.45, 0.45, 0.7, 32]} />
+                        <meshStandardMaterial color="#171717" roughness={0.8} />
+                    </mesh>
+                    {/* HUB */}
+                    <mesh rotation={[0, 0, Math.PI / 2]} position={[pos[0] > 0 ? 0.36 : -0.36, 0, 0]}>
+                        <cylinderGeometry args={[0.25, 0.25, 0.1, 16]} />
+                        <meshStandardMaterial color="#e5e5e5" metalness={0.8} roughness={0.2} />
+                    </mesh>
+                </group>
+            ))}
 
-            {/* Headlights Mesh */}
-            <mesh position={[-0.6, 0.6, 2.26]}>
-                <boxGeometry args={[0.6, 0.3, 0.1]} />
-                <meshStandardMaterial color="#fff" emissive="#ccffff" emissiveIntensity={5} />
+            {/* Headlights Glow */}
+            <mesh position={[-0.7, 0.7, 2.41]}>
+                <boxGeometry args={[0.6, 0.25, 0.1]} />
+                <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={5} />
             </mesh>
-            <mesh position={[0.6, 0.6, 2.26]}>
-                <boxGeometry args={[0.6, 0.3, 0.1]} />
-                <meshStandardMaterial color="#fff" emissive="#ccffff" emissiveIntensity={5} />
+            <mesh position={[0.7, 0.7, 2.41]}>
+                <boxGeometry args={[0.6, 0.25, 0.1]} />
+                <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={5} />
             </mesh>
 
-            {/* Taillights */}
-            <mesh position={[-0.7, 0.7, -2.26]}>
+            {/* Tail Lights Glow */}
+            <mesh position={[-0.7, 0.8, -2.41]}>
                 <boxGeometry args={[0.6, 0.2, 0.1]} />
-                <meshStandardMaterial color="#f00" emissive="#f00" emissiveIntensity={5} />
+                <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3} />
             </mesh>
-            <mesh position={[0.7, 0.7, -2.26]}>
+            <mesh position={[0.7, 0.8, -2.41]}>
                 <boxGeometry args={[0.6, 0.2, 0.1]} />
-                <meshStandardMaterial color="#f00" emissive="#f00" emissiveIntensity={5} />
+                <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3} />
             </mesh>
 
-            {/* ACTUAL SPOTLIGHTS for Headlights */}
-            <spotLight
-                ref={leftHeadlight}
-                position={[-0.6, 0.6, 2.5]}
-                angle={0.6}
-                penumbra={0.2}
-                intensity={8}
-                distance={50}
-                color="#fff"
-                castShadow
-            />
-            <spotLight
-                ref={rightHeadlight}
-                position={[0.6, 0.6, 2.5]}
-                angle={0.6}
-                penumbra={0.2}
-                intensity={8}
-                distance={50}
-                color="#fff"
-                castShadow
-            />
+            <spotLight ref={leftHeadlight} position={[-0.6, 0.7, 2.5]} angle={0.5} penumbra={0.5} intensity={10} distance={60} color="#fff" castShadow />
+            <spotLight ref={rightHeadlight} position={[0.6, 0.7, 2.5]} angle={0.5} penumbra={0.5} intensity={10} distance={60} color="#fff" castShadow />
 
         </group>
     );
 });
 
-// --- OPTIMIZATION WITH INSTANCES ---
+// --- Dense Environment Instances ---
 
-const CityInstances = () => {
-    return (
-        <Instances range={100} castShadow receiveShadow>
-            <boxGeometry args={[1, 1, 1]} /> {/* Base geometry will be scaled */}
-            <meshStandardMaterial color="#475569" roughness={0.2} />
-            <CityContext.Consumer>
-                {(value) => value}
-            </CityContext.Consumer>
-        </Instances>
-    )
-}
-
-const TreeInstances = ({ children }) => {
-    // Tree Trunk
-    return (
-        <Instances range={100} castShadow receiveShadow>
-            <cylinderGeometry args={[0.5, 0.8, 4, 8]} />
-            <meshStandardMaterial color="#451a03" />
-            {children}
-        </Instances>
-    )
-}
-const TreeTopInstances = ({ children }) => {
-    // Tree Top
-    return (
-        <Instances range={100} castShadow receiveShadow>
-            <coneGeometry args={[3, 8, 8]} />
-            <meshStandardMaterial color="#166534" />
-            {children}
-        </Instances>
-    )
-}
-
+const Buildings = () => (
+    <Instances range={200} castShadow receiveShadow>
+        <RoundedBox args={[1, 1, 1]} radius={0.02} smoothness={2} />
+        <meshStandardMaterial color="#334155" roughness={0.2} metalness={0.3} />
+        <CityContext.Consumer>{(value) => value}</CityContext.Consumer>
+    </Instances>
+)
 
 const CityBlock = ({ position }) => {
-    // Because we have random heights/widths, using pure Instance for EVERYTHING is hard without prop drilling.
-    // For now, to solve the immediate "Context Lost" crash which usually comes from Too Many Draw Calls:
-    // We will stick to simple meshes but REDUCE count or simplify geometry first. 
-    // A better approach for procedural city with random sizes is:
-    // Reuse geometry, but scale via matrices in Instances. 
-
-    // However, simpler fix: Just use standard meshes but keep geometry simple. 
-    // The crash might be due to creating new geometry every frame or render?
-    // No, the previous code was creating geometries inside the map loop, which is fine as long as count isn't massive.
-    // But let's check text rendering. Text is expensive.
-
-    const height = Math.random() * 10 + 5;
-    const width = 5 + Math.random() * 3;
+    // Pro Voxel Buildings - varying sizes
+    const height = Math.random() * 8 + 4;
+    const width = 4 + Math.random() * 3;
+    const depth = 4 + Math.random() * 3;
 
     return (
         <group position={position}>
+            {/* Main Building Body */}
             <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
-                <boxGeometry args={[width, height, width]} />
-                <meshStandardMaterial color={Math.random() > 0.5 ? "#1e293b" : "#334155"} roughness={0.2} />
+                <boxGeometry args={[width, height, depth]} />
+                <meshStandardMaterial color={Math.random() > 0.6 ? "#1e293b" : "#0f172a"} roughness={0.3} />
             </mesh>
+
+            {/* Glowing Windows - Pro look: random grid */}
+            {Array.from({ length: Math.floor(height) }).map((_, y) => (
+                Array.from({ length: Math.floor(width / 1.5) }).map((__, x) => (
+                    Math.random() > 0.5 && (
+                        <mesh key={`${x}-${y}`} position={[
+                            (x - width / 3) * 1.5,
+                            y + 1,
+                            depth / 2 + 0.05
+                        ]}>
+                            <planeGeometry args={[0.6, 0.6]} />
+                            <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={2} toneMapped={false} />
+                        </mesh>
+                    )
+                ))
+            ))}
         </group>
     );
 }
 
-const Tree = ({ position }) => (
-    <group position={position}>
-        <mesh position={[0, 2, 0]} castShadow>
-            <cylinderGeometry args={[0.5, 0.8, 4, 8]} />
-            <meshStandardMaterial color="#451a03" />
+const Trees = () => (
+    // Placeholder for Instance logic if we were using purely raw instances
+    // But for now we use functional component distribution for ease of "Look" customization
+    null
+)
+
+const VoxelTree = ({ position }) => {
+    // Dense, cute, professional voxel tree
+    return (
+        <group position={position}>
+            {/* Trunk */}
+            <mesh position={[0, 1.5, 0]} castShadow>
+                <boxGeometry args={[0.8, 3, 0.8]} />
+                <meshStandardMaterial color="#3f2e26" />
+            </mesh>
+            {/* Leaves Blocks - Dense/Layered for "Pro" look */}
+            <mesh position={[0, 4, 0]} castShadow>
+                <boxGeometry args={[3, 2, 3]} />
+                <meshStandardMaterial color="#15803d" />
+            </mesh>
+            <mesh position={[0, 5.5, 0]} castShadow>
+                <boxGeometry args={[2, 1.5, 2]} />
+                <meshStandardMaterial color="#16a34a" />
+            </mesh>
+            <mesh position={[0, 6.5, 0]} castShadow>
+                <boxGeometry args={[1, 0.8, 1]} />
+                <meshStandardMaterial color="#22c55e" />
+            </mesh>
+        </group>
+    )
+}
+
+const StreetLight = ({ position, rotation }) => (
+    <group position={position} rotation={rotation}>
+        <mesh position={[0, 3, 0]}>
+            <cylinderGeometry args={[0.2, 0.25, 6]} />
+            <meshStandardMaterial color="#333" />
         </mesh>
-        <mesh position={[0, 6, 0]} castShadow>
-            <coneGeometry args={[3, 8, 8]} />
-            <meshStandardMaterial color="#166534" />
+        <mesh position={[1, 5.8, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.15, 0.15, 2]} />
+            <meshStandardMaterial color="#333" />
+        </mesh>
+        <group position={[2, 5.5, 0]}>
+            <boxGeometry args={[0.5, 0.2, 0.5]} />
+            <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={3} />
+            <spotLight
+                position={[0, -0.5, 0]}
+                angle={0.8}
+                penumbra={0.5}
+                intensity={5}
+                distance={15}
+                color="#fbbf24"
+                target-position={[0, -10, 0]}
+            />
+        </group>
+    </group>
+)
+
+// --- CHECKPOINTS w/ BILLBOARDS ---
+
+const InfoBillboard = ({ position, title, content, rotation = [0, 0, 0] }) => (
+    <group position={position} rotation={rotation}>
+        {/* Post - Moved back to avoid blocking road/text */}
+        <mesh position={[0, -2, -1]}>
+            <cylinderGeometry args={[0.5, 0.5, 20]} />
+            <meshStandardMaterial color="#334155" />
+        </mesh>
+
+        {/* Board - Even larger and lifted higher */}
+        <group position={[0, 8, -0.5]}>
+            <RoundedBox args={[22, 14, 0.6]} radius={0.2} smoothness={2}>
+                <meshStandardMaterial color="#0f172a" />
+            </RoundedBox>
+            {/* Border Glow */}
+            <mesh position={[0, 0, -0.1]}>
+                <boxGeometry args={[22.3, 14.3, 0.4]} />
+                <meshStandardMaterial color="#fff" emissive="#f97316" emissiveIntensity={0.8} />
+            </mesh>
+
+            {/* Text Content - Larger and clearer */}
+            <Text position={[0, 4, 0.4]} fontSize={1.8} color="#fbbf24" anchorX="center" anchorY="middle" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
+                {title}
+            </Text>
+            <Text position={[0, -1, 0.4]} fontSize={1.0} maxWidth={20} color="#cbd5e1" lineHeight={1.6} anchorX="center" anchorY="middle" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
+                {content}
+            </Text>
+        </group>
+
+        {/* Hologram Base */}
+        <mesh position={[0, -5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[2.5, 3, 32]} />
+            <meshStandardMaterial color="#f97316" emissive="#f97316" opacity={0.5} transparent />
         </mesh>
     </group>
-);
-
+)
 
 // --- ROAD LOGIC ---
-
 const CurveRoad = () => {
     const curve = useMemo(() => {
         return new THREE.CatmullRomCurve3([
             new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 0, -50),
-            new THREE.Vector3(-20, 0, -100),
-            new THREE.Vector3(-30, 0, -180),
-            new THREE.Vector3(20, 0, -250),
-            new THREE.Vector3(60, 5, -350),
-            new THREE.Vector3(20, 0, -450),
-            new THREE.Vector3(-40, 0, -550),
-            new THREE.Vector3(0, 0, -650),
+            new THREE.Vector3(0, 0, -60),
+            new THREE.Vector3(-15, 0, -120),
+            new THREE.Vector3(-40, 2, -200),
+            new THREE.Vector3(10, 0, -320),
+            new THREE.Vector3(50, 4, -480),
+            new THREE.Vector3(10, 0, -660),
+            new THREE.Vector3(-30, 2, -860),
+            new THREE.Vector3(0, 0, -1100),
         ]);
     }, []);
 
     const tubeGeometry = useMemo(() => {
-        // Radius = 6
-        return new THREE.TubeGeometry(curve, 200, 6, 12, false); // reduced segments
+        return new THREE.TubeGeometry(curve, 500, 7, 24, false); // more segments for longer road
     }, [curve]);
 
     return { curve, tubeGeometry };
@@ -252,131 +264,154 @@ const Experience = () => {
     const [points, setPoints] = useState([]);
 
     useEffect(() => {
-        setPoints(curve.getPoints(150)); // Reduced points for performance
+        setPoints(curve.getPoints(150)); // More sample points
     }, [curve]);
 
     useFrame((state) => {
-        const offset = scroll.offset; // 0 to 1
-
-        // Calculate position on the curve
+        const offset = scroll.offset;
         const t = Math.min(0.999, offset);
         const point = curve.getPointAt(t);
         const tangent = curve.getTangentAt(t).normalize();
 
         if (carRef.current) {
-            carRef.current.position.copy(point).add(new THREE.Vector3(0, 6.1, 0));
+            const carPos = point.clone().add(new THREE.Vector3(0, 7.1, 0));
+            carRef.current.position.lerp(carPos, 0.2);
 
-            // Look Ahead
-            const lookAtPoint = curve.getPointAt(Math.min(1, t + 0.001));
-            carRef.current.lookAt(lookAtPoint.add(new THREE.Vector3(0, 6.1, 0)));
+            const lookAtPoint = curve.getPointAt(Math.min(1, t + 0.01));
+            const targetLook = lookAtPoint.clone().add(new THREE.Vector3(0, 7.1, 0));
+            carRef.current.lookAt(targetLook);
 
-            // --- Third Person Camera Logic ---
-            const cameraOffset = tangent.clone().multiplyScalar(-18).add(new THREE.Vector3(0, 10, 0));
+            const cameraOffset = tangent.clone().multiplyScalar(-15).add(new THREE.Vector3(0, 8, 0));
             const targetCamPos = carRef.current.position.clone().add(cameraOffset);
 
-            state.camera.position.lerp(targetCamPos, 0.1);
+            state.camera.position.lerp(targetCamPos, 0.08);
             state.camera.lookAt(carRef.current.position.clone().add(new THREE.Vector3(0, 2, 0)));
         }
     });
 
     return (
         <>
-            <ambientLight intensity={0.1} />
-            <Stars radius={200} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
-            <Environment preset="night" />
+            <ambientLight intensity={0.6} color="#ffd1b3" />
+            <Stars radius={300} depth={50} count={3000} factor={4} saturation={0.5} fade speed={0.5} />
+            <Environment preset="sunset" />
+            <fog attach="fog" args={['#ff7e5f', 30, 220]} />
 
             {/* The Car */}
-            <HighResCar ref={carRef} scale={1} />
+            <HighResCar ref={carRef} />
 
-            {/* The Road Visual */}
+            {/* Road */}
             <mesh geometry={tubeGeometry} receiveShadow position={[0, 0, 0]}>
-                <meshStandardMaterial color="#1f2937" roughness={0.4} />
+                <meshStandardMaterial color="#1f1f1f" roughness={0.3} />
             </mesh>
 
-            {/* Ground Plane */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -20, 0]} receiveShadow>
-                <planeGeometry args={[1000, 1000]} />
+            {/* Ground */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -25, 0]} receiveShadow>
+                <planeGeometry args={[4000, 4000]} />
                 <meshStandardMaterial color="#020617" roughness={1} />
             </mesh>
 
-            {/* Optimized Environment Generation */}
+            {/* Dense Environment */}
             {points.map((p, i) => {
-                if (i % 3 !== 0) return null; // Reduce density for fewer draw calls
-
-                const width = 20 + Math.random() * 10;
                 const tangent = curve.getTangentAt(i / 150);
                 const up = new THREE.Vector3(0, 1, 0);
                 const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
 
-                const leftPos = p.clone().add(right.clone().multiplyScalar(-width));
-                const rightPos = p.clone().add(right.clone().multiplyScalar(width));
+                const dist = 18 + Math.random() * 25;
+                const leftPos = p.clone().add(right.clone().multiplyScalar(-dist));
+                const rightPos = p.clone().add(right.clone().multiplyScalar(dist));
+                const terrainY = p.y - 10;
+                leftPos.y = terrainY;
+                rightPos.y = terrainY;
 
-                leftPos.y = -5;
-                rightPos.y = -5;
+                const lightDist = 9;
+                const leftLightPos = p.clone().add(right.clone().multiplyScalar(-lightDist));
+                const rightLightPos = p.clone().add(right.clone().multiplyScalar(lightDist));
+                leftLightPos.y = p.y;
+                rightLightPos.y = p.y;
 
                 return (
                     <group key={i}>
-                        <CityBlock position={leftPos} />
-                        <Tree position={rightPos} />
+                        {i % 2 === 0 && <CityBlock position={leftPos} />}
+                        <VoxelTree position={rightPos} />
+                        {i % 5 === 0 && (
+                            <StreetLight position={leftLightPos} rotation={[0, -Math.PI / 4, 0]} />
+                        )}
                     </group>
                 )
             })}
 
-            {/* Checkpoints - Removed invalid font URL */}
-            <Checkpoint position={[0, 10, -50]} text="Start" color="#4ade80" />
-            <Checkpoint position={[-20, 10, -100]} text="Education" color="#60a5fa" />
-            <Checkpoint position={[20, 10, -250]} text="Experience" color="#c084fc" />
-            <Checkpoint position={[0, 10, -650]} text="Future" color="#facc15" />
+            {/* BILLBOARDS AT CHECKPOINTS - Strategically aligned with curve */}
+            <InfoBillboard
+                position={[25, 7, -60]}
+                rotation={[0, -0.3, 0]}
+                title="My collage"
+                content="Completed B.Tech CSE at GNDU with CGPA 8.0. Strengthened core concepts in algorithms and database systems."
+            />
+            <InfoBillboard
+                position={[-60, 8, -180]}
+                rotation={[0, 0.5, 0]}
+                title="My Internship"
+                content="MERN Stack Intern. Developed full-stack modules and integrated REST APIs."
+            />
+            <InfoBillboard
+                position={[45, 8, -320]}
+                rotation={[0, -0.4, 0]}
+                title="Cybertron Technologies"
+                content="Jr. Software Developer working on secure backend systems and RESTful APIs."
+            />
+            <InfoBillboard
+                position={[20, 12, -480]}
+                rotation={[0, 1.2, 0]}
+                title="Lerning Era"
+                content="Strengthened fundamentals in system design, databases, and backend architecture "
+            />
+            <InfoBillboard
+                position={[45, 8, -660]}
+                rotation={[0, -0.2, 0]}
+                title="Cybersecurity"
+                content="Exploring secure coding practices, API protection strategies, authentication flows, and vulnerability awareness in backend systems."
+            />
+            <InfoBillboard
+                position={[-65, 10, -860]}
+                rotation={[0, 0.4, 0]}
+                title="Next Phase"
+                content="Advancing toward cloud-native architectures, distributed systems, and high-performance backend engineering at scale"
+            />
+
+            {/* Floating Finish Line */}
+            <group position={[0, 10, -1000]}>
+                <Text fontSize={10} color="#fbbf24" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
+                    THE END?
+                </Text>
+                <Text position={[0, -8, 0]} fontSize={4} color="#fff" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
+                    New Game+ Available
+                </Text>
+            </group>
 
         </>
     );
 };
 
-const Checkpoint = ({ position, text, color }) => (
-    <group position={position}>
-        <Float speed={2} floatIntensity={1}>
-            <Text
-                position={[0, 5, 0]}
-                fontSize={5}
-                color={color}
-                anchorX="center"
-                anchorY="middle"
-                // Removed invalid font prop to use default, which is safe
-                outlineWidth={0.2}
-                outlineColor="#000"
-            >
-                {text}
-            </Text>
-        </Float>
-        <mesh position={[0, -10, 0]}>
-            <cylinderGeometry args={[3, 3, 1, 32]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
-        </mesh>
-        <pointLight position={[0, 0, 0]} intensity={5} color={color} distance={30} />
-    </group>
-);
-
 
 const LifeJourney = () => {
     return (
         <div className="w-full h-screen bg-black relative">
-            {/* Overlay UI */}
+            {/* UI Overlay */}
             <div className="absolute top-6 left-6 z-50">
-                <Link to="/" className="px-6 py-3 bg-black/60 backdrop-blur rounded text-white font-minecraft border-2 border-white/20 hover:bg-white/10 transition-all font-['Press_Start_2P'] text-xs">
-                    ← BACK TO BASE
+                <Link to="/" className="px-6 py-3 bg-black/60 backdrop-blur rounded text-white border-2 border-white/20 hover:bg-white/10 hover:scale-105 transition-all font-['Press_Start_2P'] text-xs">
+                    ← BASE
                 </Link>
             </div>
 
-            <div className="absolute bottom-10 center z-50 pointer-events-none text-white text-center w-full opacity-70">
-                <p className="text-[10px] font-['Press_Start_2P'] text-yellow-400 animate-pulse">SCROLL TO DRIVE</p>
+            <div className="absolute bottom-10 w-full text-center z-50 pointer-events-none">
+                <p className="text-[10px] font-['Press_Start_2P'] text-yellow-400 animate-pulse drop-shadow-md">SCROLL TO ACCELERATE</p>
             </div>
 
-            <Canvas shadows>
+            <Canvas shadows dpr={[1, 2]}> {/* DPR optimization */}
                 <PerspectiveCamera makeDefault position={[0, 10, 20]} fov={60} />
-                <fog attach="fog" args={['#020617', 20, 150]} />
 
                 <Suspense fallback={null}>
-                    <ScrollControls pages={8} damping={0.2}>
+                    <ScrollControls pages={15} damping={0.15}> {/* Balanced pages for tighter spacing */}
                         <Experience />
                     </ScrollControls>
                 </Suspense>

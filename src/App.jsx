@@ -4,7 +4,7 @@ import LifeJourney from './pages/LifeJourney';
 
 function App() {
   return (
-    <Router basename="/Portfolio">
+    <Router basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/mylife" element={<LifeJourney />} />

@@ -1,123 +1,214 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Sky, Stars, Float, Cloud, useScroll, ScrollControls, Scroll } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Sky, Stars, Float, Cloud, useScroll, ScrollControls, Scroll, useGLTF } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect, Suspense, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import * as THREE from 'three';
+import Steve from '../components/3d/Steve';
 
-// --- Assets & Data ---
+// --- Mobs & Assets ---
 
+// Placeholder components for 3D Mobs - in real app would useGLTF
+// We use simple geometric approximations that look like "Figures"
+// SteveFigure removed as we now use the dedicated Steve component
+
+const WolfFigure = forwardRef((props, ref) => (
+    <group {...props} ref={ref}>
+        <mesh position={[0, 1, 0]} castShadow>
+            <boxGeometry args={[1, 1, 2]} />
+            <meshStandardMaterial color="#e5e5e5" />
+        </mesh>
+        <mesh position={[0, 2, 0.8]}>
+            <boxGeometry args={[0.8, 0.8, 0.8]} />
+            <meshStandardMaterial color="#e5e5e5" />
+        </mesh>
+    </group>
+));
+
+// No DragonFigure needed
+
+
+// --- Data ---
 const SKILLS = [
-    { name: "Full Stack Dev", level: "Diamond", xp: "20 Years" },
-    { name: "AI Engineering", level: "Netherite", xp: "8 Years" },
-    { name: "System Design", level: "Gold", xp: "12 Years" },
-    { name: "Cloud Arch", level: "Emerald", xp: "10 Years" },
+    { name: "Java & Spring Boot", level: "Advanced", xp: "85%" },
+    { name: "Django & Laravel", level: "Intermediate", xp: "75%" },
+    { name: "Node.js & Express", level: "Intermediate", xp: "70%" },
+    { name: "SQL & Data Modeling", level: "Strong", xp: "80%" },
+    { name: "REST API Design", level: "Strong", xp: "85%" },
+    { name: "Security Practices", level: "Working Knowledge", xp: "65%" }
 ];
 
-const EXPERIENCE_LOG = [
-    { title: "Senior Architect at TechCorp", date: "2018 - Present", desc: "Led migration of legacy monoliths to microservices." },
-    { title: "Lead Developer at StartUpInc", date: "2014 - 2018", desc: "Built core product from 0 to 1M users." },
-    { title: "Full Stack Eng at WebSolutions", date: "2010 - 2014", desc: "Developed high-traffic e-commerce platforms." },
+
+const EDU_DATA = [
+    { title: "Master of Computer Science", school: "University of Tech", year: "2008 - 2010" },
+    { title: "B.Tech Information Systems", school: "State College", year: "2004 - 2008" },
 ];
 
 const PROJECTS = [
-    { title: "E-Commerce Core", type: "Enterprise", desc: "Scalable microservices handling 1M+ txns.", link: "#" },
-    { title: "Neural Vision", type: "AI/ML", desc: "Real-time object detection for security.", link: "#" },
-    { title: "Block Chain Ledger", type: "Web3", desc: "Decentralized identity management.", link: "#" },
+    {
+        title: "SGF Portal",
+        desc: "A full-stack project management system with role-based access control, task workflows, and secure backend architecture using Spring Boot and SQL.",
+        type: "Full Stack / Backend",
+        image: "public/images/sgf.png"
+    },
+    {
+        title: "EzzApply",
+        desc: "Swipe-based job discovery platform inspired by Tinder. Built React frontend with backend API integration and job interaction tracking.",
+        type: "Full Stack",
+        image: "public/images/ezzapply.png"
+    },
+    {
+        title: "AI Image Generator",
+        desc: "React-based AI tool integrated with OpenAI API to generate images from prompts with loading states and error handling.",
+        type: "AI / Frontend",
+        image: "public/images/ai.png"
+    }
 ];
 
-// --- 3D Background System ---
+
+const EXPERIENCE = [
+    {
+        company: "Cybertron Technologies Pvt. Ltd",
+        role: "Jr. Software Developer",
+        period: "Feb 2025 – Present",
+        desc: "Working on backend development using Spring Boot, Django, and Laravel. Designing RESTful APIs, implementing authentication & RBAC systems, optimizing SQL queries, and contributing to scalable admin dashboards and production-ready systems."
+    },
+    {
+        company: "Solitaire Infosys",
+        role: "MERN Stack Intern",
+        period: "2024-2025",
+        desc: "Developed full-stack features using MongoDB, Express.js, React, and Node.js. Built responsive UI components, integrated REST APIs, and worked on authentication workflows during internship training projects."
+    },
+    {
+        company: "Guru Nanak Dev University, Amritsar",
+        role: "B.Tech Computer Science & Engineering",
+        period: "2021 – 2025",
+        desc: "Graduated with CGPA 8.0/10.0. Built multiple academic and personal projects focused on backend systems, database design, and scalable web application development."
+    }
+];
+
+
+const ACHIEVEMENTS = [
+    {
+        icon: "🔐",
+        title: "Access Control Architect",
+        desc: "Implemented secure JWT authentication & role-based authorization systems."
+    },
+    {
+        icon: "🛡️",
+        title: "API Security Hardening",
+        desc: "Designed protected REST endpoints with validation, middleware & permission layers."
+    },
+    {
+        icon: "🧠",
+        title: "Secure Backend Design",
+        desc: "Applied layered architecture to minimize attack surface in production systems."
+    },
+    {
+        icon: "🗄️",
+        title: "Data Integrity Enforcement",
+        desc: "Structured relational databases with constraints, indexing & controlled access."
+    },
+    { icon: "⚙️", title: "Backend Threat Mitigation", desc: "Applied validation, error handling & input sanitization to reduce vulnerabilities." },
+    { icon: "📊", title: "Database Security", desc: "Designed structured schemas with controlled access & query optimization." }
+];
+
 
 const BackgroundManager = ({ setBgTheme }) => {
     const scroll = useScroll();
-    const lightRef = useRef();
+    const { scene } = useThree();
+
+    useEffect(() => {
+        // Initialize background if null
+        if (!scene.background) {
+            scene.background = new THREE.Color('#87ceeb');
+        }
+        // Initialize fog if needed (though <fog> component usually handles this)
+    }, [scene]);
 
     useFrame((state) => {
         const r = scroll.offset; // 0 to 1
 
         let theme = 'overworld';
-        if (r > 0.25) theme = 'mining';
-        if (r > 0.5) theme = 'nether';
-        if (r > 0.8) theme = 'end';
+        if (r > 0.15) theme = 'mining';
+        if (r > 0.4) theme = 'nether';
+        if (r > 0.7) theme = 'end';
 
         setBgTheme(theme);
 
-        // Dynamic Colors Interpolation
-        const overworldColor = new THREE.Color('#87ceeb');
-        const sunsetColor = new THREE.Color('#fd5e53');
-        const netherColor = new THREE.Color('#3b0000');
-        const endColor = new THREE.Color('#090014');
+        const colors = {
+            overworld: new THREE.Color('#87ceeb'),
+            sunset: new THREE.Color('#fd5e53'),
+            nether: new THREE.Color('#3b0000'),
+            end: new THREE.Color('#090014')
+        };
 
-        let targetColor = overworldColor;
+        let target = colors.overworld;
+        if (r > 0.1 && r < 0.35) target = colors.sunset;
+        if (r >= 0.35 && r < 0.75) target = colors.nether;
+        if (r >= 0.75) target = colors.end;
 
-        if (r < 0.25) {
-            targetColor = overworldColor.clone().lerp(sunsetColor, r / 0.25);
-        } else if (r < 0.5) {
-            targetColor = sunsetColor.clone().lerp(netherColor, (r - 0.25) / 0.25);
-        } else if (r < 0.8) {
-            targetColor = netherColor.clone().lerp(endColor, (r - 0.5) / 0.3);
-        } else {
-            targetColor = endColor;
+        if (state.scene.background && state.scene.background.isColor) {
+            state.scene.background.lerp(target, 0.1);
         }
 
-        state.scene.background = targetColor;
-        if (state.scene.fog) state.scene.fog.color.lerp(targetColor, 0.1);
+        if (state.scene.fog && state.scene.fog.color) {
+            state.scene.fog.color.lerp(target, 0.1);
+        }
     });
 
     return (
         <group>
             <ambientLight intensity={0.5} />
-            <directionalLight ref={lightRef} position={[10, 20, 10]} intensity={1} castShadow />
+            <directionalLight position={[10, 20, 10]} intensity={1} castShadow />
             <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
         </group>
     );
 };
 
-// --- Floating Elements for visual depth ---
-const BiomeParticles = ({ theme }) => {
+const ScrollObjects = () => {
+    const scroll = useScroll();
+    const steveRef = useRef();
+    const wolfRef = useRef();
+    const dragonRef = useRef();
+
+    useFrame(() => {
+        const r = scroll.offset;
+
+        // Show Steve in Hero/About (0 - 0.3)
+        if (steveRef.current) {
+            steveRef.current.position.x = THREE.MathUtils.lerp(steveRef.current.position.x, r < 0.3 ? 3 : 15, 0.1);
+            steveRef.current.rotation.y += 0.01;
+        }
+
+        // Show Wolf in Experience/Skills (0.3 - 0.7)
+        if (wolfRef.current) {
+            const isActive = r > 0.3 && r < 0.7;
+            wolfRef.current.position.x = THREE.MathUtils.lerp(wolfRef.current.position.x, isActive ? -3 : -15, 0.1);
+        }
+
+        // No Dragon
+    });
+
     return (
         <group>
-            {theme === 'overworld' && (
-                <Float speed={1} rotationIntensity={0.5} floatIntensity={0.5}>
-                    <Cloud opacity={0.5} speed={0.4} width={10} depth={1.5} segments={20} position={[0, 10, -20]} />
-                </Float>
-            )}
-            {theme === 'nether' && (
-                <Float speed={2} rotationIntensity={1} floatIntensity={2}>
-                    {Array.from({ length: 10 }).map((_, i) => (
-                        <mesh key={i} position={[Math.random() * 20 - 10, Math.random() * 20, -15]}>
-                            <boxGeometry args={[0.5, 0.5, 0.5]} />
-                            <meshStandardMaterial color="#ff4500" emissive="#ff0000" emissiveIntensity={2} />
-                        </mesh>
-                    ))}
-                </Float>
-            )}
-            {theme === 'end' && (
-                <Float speed={0.5} rotationIntensity={0.2} floatIntensity={0.5}>
-                    {Array.from({ length: 20 }).map((_, i) => (
-                        <mesh key={i} position={[Math.random() * 30 - 15, Math.random() * 30, -20]}>
-                            <boxGeometry args={[0.2, 0.2, 0.2]} />
-                            <meshStandardMaterial color="#d8bfd8" emissive="#8a2be2" emissiveIntensity={5} />
-                        </mesh>
-                    ))}
-                </Float>
-            )}
+            <Steve ref={steveRef} position={[15, -2, 0]} scale={3} rotation={[0, -0.5, 0]} />
+            <WolfFigure ref={wolfRef} position={[-15, -2, 0]} scale={1.5} />
         </group>
     )
 }
 
-// --- UI Components ---
+
+// --- UI ---
 
 const MinecraftCard = ({ children, className, variant = "glass" }) => (
     <div className={classNames(
         "p-6 relative transition-all duration-300 transform hover:scale-[1.01]",
         variant === "glass" && "bg-black/40 backdrop-blur-md border border-white/20 shadow-xl rounded-sm",
         variant === "obsidian" && "bg-[#120c1c] border-2 border-[#5a4875] shadow-2xl rounded-sm",
-        variant === "paper" && "bg-[#f2e6c9] border-4 border-[#8b5a2b] text-[#3e2723] rounded-sm",
         className
     )}>
-        {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-white/30" />
         <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-white/30" />
         <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-white/30" />
@@ -126,116 +217,170 @@ const MinecraftCard = ({ children, className, variant = "glass" }) => (
     </div>
 );
 
-const StatBar = ({ label, value, color }) => (
-    <div className="mb-4">
-        <div className="flex justify-between text-[10px] uppercase tracking-widest mb-1 opacity-80">
-            <span>{label}</span>
-            <span>{value}</span>
-        </div>
-        <div className="h-4 bg-black/50 border border-white/10 p-0.5">
-            <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: "100%" }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                className={classNames("h-full", color)}
-            />
-        </div>
-    </div>
+const SectionHeader = ({ title }) => (
+    <h2 className="text-2xl md:text-3xl font-bold mb-8 text-white drop-shadow-[2px_2px_0_#000] text-center">{title}</h2>
 );
 
-const SectionHeader = ({ title, subtitle }) => (
-    <div className="mb-12 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white drop-shadow-[2px_2px_0_#000]">{title}</h2>
-        {subtitle && <p className="text-xs md:text-sm text-gray-300 bg-black/40 inline-block px-3 py-1 rounded">{subtitle}</p>}
-    </div>
-);
+// --- Custom Scroll Navigation ---
+// Since we are inside <Scroll>, standard #anchors might break or get stuck.
+// We use a simple ref-based scroll function to jump to approximate percentages.
+// Or we just rely on the fact that <Scroll html> renders a standard div. 
+// The "stuck at bottom" issue is often because ScrollControls calculates height based on pages.
+// If pages=6 but content is shorter, you have empty space. 
+// Improvement: Ensure pages prop matches content length.
 
-// --- Content Components ---
+const HeaderNav = ({ navigate }) => {
+    const scrollTo = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
 
-const HeaderNav = ({ navigate }) => (
-    <div className="w-full flex justify-between items-center py-6 border-b border-white/10 mb-10">
-        <div className="text-lg font-bold text-white drop-shadow-md">Notch.dev</div>
-        <div className="flex gap-6 text-[10px] md:text-xs uppercase tracking-wider">
-            <a href="#about" className="hover:text-green-400 transition-colors">About</a>
-            <a href="#skills" className="hover:text-yellow-400 transition-colors">Stats</a>
-            <a href="#experience" className="hover:text-blue-400 transition-colors">Quest Log</a>
-            <button onClick={() => navigate('/mylife')} className="text-purple-400 hover:text-purple-300 font-bold border-b border-purple-500">
-                Play Mode
-            </button>
-        </div>
-    </div>
-);
-
-const HtmlContent = ({ setBgTheme, navigate }) => {
     return (
-        <div className="w-full px-6 md:px-20 pb-20 font-['Press_Start_2P'] max-w-7xl mx-auto">
+        <div className="w-full flex justify-between items-center py-6 border-b border-white/10 mb-10 pointer-events-auto">
+            <div className="text-lg font-bold text-white drop-shadow-md cursor-pointer" onClick={() => window.scrollTo(0, 0)}>Harsh.Dev</div>
+            <div className="flex gap-3 md:gap-6 text-[8px] md:text-[14px] uppercase tracking-wider items-center">
+                <button onClick={() => scrollTo('about')} className="hover:text-green-400">About</button>
+                <button onClick={() => scrollTo('experience')} className="hover:text-orange-400">XP</button>
+                <button onClick={() => scrollTo('skills')} className="hover:text-yellow-400">Skills</button>
+                <button onClick={() => scrollTo('projects')} className="hover:text-blue-400">Projects</button>
+                <button onClick={() => scrollTo('contact')} className="hover:text-red-400">Contact</button>
+                <button onClick={() => navigate('/mylife')} className="px-3 py-1 bg-purple-600 rounded-sm hover:bg-purple-500 font-bold ml-2">
+                    My Journey
+                </button>
+            </div>
+        </div>
+    )
+};
+
+
+const HtmlContent = ({ navigate }) => {
+    return (
+        <div className="w-full px-6 md:px-20 pb-40 font-['Press_Start_2P'] max-w-7xl mx-auto">
+
+            {/* HEADER */}
+            <HeaderNav navigate={navigate} />
 
             {/* HERO */}
-            <section id="header" className="min-h-screen flex flex-col pt-10">
-                <HeaderNav navigate={navigate} />
-                <motion.div
-                    initial={{ y: 50, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.8 }}
-                    className="flex-1 flex flex-col justify-center"
-                >
-                    <div className="w-20 h-20 bg-green-500 mb-6 border-4 border-black/50 shadow-lg animate-bounce"></div>
-                    <h1 className="text-4xl md:text-7xl mb-6 text-white drop-shadow-[5px_5px_0_rgba(0,0,0,0.8)] leading-tight">
+            <section id="hero" className="min-h-[70vh] flex flex-col justify-center">
+                <div className="flex flex-col">
+                    <h1 className="text-4xl md:text-8xl mb-6 text-white drop-shadow-[4px_4px_0_#000] leading-tight italic">
                         HARSH KHATRI
                     </h1>
                     <div className="text-sm md:text-xl bg-black/50 inline-block px-4 py-3 border-l-4 border-green-500 mb-8 max-w-fit">
-                        <span className="text-green-400">Level 99 Architect</span>
+                        <span className="text-green-400">Level 69 Software Engineer</span>
                     </div>
-
                     <div className="flex gap-4">
-                        <button
-                            onClick={() => navigate('/mylife')}
-                            className="px-6 py-3 bg-[#5c9e6d] hover:bg-[#4a8a5b] text-white border-b-4 border-[#2e5e3a] active:border-b-0 active:mt-1 transition-all text-xs uppercase"
-                        >
-                            Start Game
-                        </button>
-                        <a href="#contact" className="px-6 py-3 bg-[#525252] hover:bg-[#404040] text-white border-b-4 border-[#262626] active:border-b-0 active:mt-1 transition-all text-xs uppercase decoration-0">
-                            Connect
-                        </a>
+                        <div className="h-4 w-48 bg-gray-800 border border-white/20">
+                            <div className="h-full bg-green-500 w-[50%] shadow-[0_0_10px_#22c55e]"></div>
+                        </div>
+                        <span className="text-[10px] text-gray-400">HP: 50/100</span>
                     </div>
-                </motion.div>
+                </div>
             </section>
 
             {/* ABOUT ME */}
-            <section id="about" className="py-20">
-                <SectionHeader title="Player Info" subtitle="Bio data loaded" />
-                <MinecraftCard variant="glass" className="p-8 md:p-12">
-                    <p className="text-xs md:text-sm leading-8 text-gray-200 font-sans">
-                        I am a passionate software engineer with over 20 years of experience in the server.
-                        My journey began mining simple scripts and has evolved into architecting massive, scalable cloud infrastructures.
-                        I specialize in building tools that help players (users) achieve their goals efficiently.
-                        Just like in Minecraft, I believe in gathering the right resources and crafting widely resilient systems.
-                    </p>
-                </MinecraftCard>
+            <section id="about" className="py-20 min-h-[60vh]">
+                <SectionHeader title="My Info" />
+                <div className="grid md:grid-cols-2 gap-8">
+                    <MinecraftCard variant="glass">
+                        <h3 className="text-sm text-green-400 mb-4">About Me</h3>
+                        <p className="text-sm leading-9 text-gray-200 font-sans">
+                            Hi, I’m Harsh Khatri — a Backend Engineer focused on building scalable and secure backend systems.
+                            With hands-on experience in Java and Spring Boot, I develop RESTful APIs, implement authentication and authorization systems, and design efficient relational databases. I currently work at Cybertron Technologies Pvt. Ltd, where I contribute to backend services powering real business workflows.
+                            I enjoy turning complex requirements into clean, maintainable backend architectures. Whether it’s RBAC systems, optimized SQL queries, or structured service-layer design, I aim to build systems that are reliable, scalable, and production-ready.
+                        </p>
+                    </MinecraftCard>
+                    <MinecraftCard variant="glass">
+                        <h3 className="text-sm text-blue-400 mb-4">Core Attributes</h3>
+                        <div className="space-y-4">
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center border border-green-500/50">⚙️</div>
+                                <div className="text-[10px]">Engine: RESTful API Development</div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center border border-red-500/50">🛡️</div>
+                                <div className="text-[10px]">Security: Authentication & RBAC</div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center border border-yellow-500/50">🧠</div>
+                                <div className="text-[10px]">Logic: Clean Service Architecture</div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center border border-blue-500/50">🗄️</div>
+                                <div className="text-[10px]">Data: Optimized SQL & Modeling</div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center border border-purple-500/50">🚀</div>
+                                <div className="text-[10px]">Performance: Scalable Backend Systems</div>
+                            </div>
+
+                        </div>
+                    </MinecraftCard>
+
+                </div>
             </section>
 
-            {/* SKILLS / INVENTORY */}
-            <section id="skills" className="py-20">
-                <SectionHeader title="Inventory" subtitle="Equipped Skills" />
+            {/* EXPERIENCE */}
+            <section id="experience" className="py-20 min-h-[60vh]">
+                <SectionHeader title="Experience (XP)" />
+                <div className="space-y-6">
+                    {EXPERIENCE.map((exp, i) => (
+                        <MinecraftCard key={i} variant="glass" className="border-l-4 border-orange-500">
+                            <div className="flex flex-col md:flex-row justify-between mb-4">
+                                <div>
+                                    <h3 className="text-sm text-orange-400 mb-1">{exp.role}</h3>
+                                    <p className="text-[10px] text-gray-400 italic">{exp.company}</p>
+                                </div>
+                                <div className="text-[8px] text-gray-500 mt-2 md:mt-0">{exp.period}</div>
+                            </div>
+                            <p className="text-xs leading-6 text-gray-300 font-sans">{exp.desc}</p>
+                        </MinecraftCard>
+                    ))}
+                </div>
+            </section>
+
+            {/* SKILLS */}
+            <section id="skills" className="py-20 min-h-[60vh]">
+                <SectionHeader title="Inventory & Stats" />
                 <div className="grid md:grid-cols-2 gap-12">
                     <MinecraftCard variant="obsidian">
-                        <h3 className="text-sm text-yellow-400 mb-6 border-b border-white/10 pb-2">Main Stats</h3>
+                        <h3 className="text-sm text-yellow-400 mb-6 font-bold">Skill Tree</h3>
                         {SKILLS.map((s, i) => (
-                            <StatBar key={i} label={s.name} value={s.xp} color="bg-green-500" />
+                            <div key={i} className="mb-4">
+                                <div className="flex justify-between text-[10px] mb-2 uppercase tracking-tighter">
+                                    <span>{s.name}</span>
+                                    <span className="text-yellow-500">{s.level}</span>
+                                </div>
+                                <div className="h-3 bg-gray-900 border border-white/10 p-[1px]">
+                                    <div className="h-full bg-gradient-to-r from-green-600 to-green-400" style={{ width: s.xp }}></div>
+                                </div>
+                            </div>
                         ))}
                     </MinecraftCard>
 
-                    {/* Graphic Inventory Grid */}
-                    <div className="bg-[#8b8b8b] p-4 border-4 border-[#373737] rounded">
-                        <h3 className="text-[10px] text-white mb-2">Backpack</h3>
-                        <div className="grid grid-cols-4 gap-2">
-                            {Array.from({ length: 16 }).map((_, i) => (
-                                <div key={i} className="aspect-square bg-[#8b8b8b] border-2 border-[#373737] inset-0 shadow-[inset_2px_2px_0_rgba(0,0,0,0.5),inset_-2px_-2px_0_rgba(255,255,255,0.2)] flex items-center justify-center hover:bg-[#a0a0a0] transition-colors cursor-help group relative">
-                                    {i < 4 && <div className={`w-8 h-8 ${['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500'][i]}`} />}
-                                    {/* Tooltip */}
-                                    {i < 4 && <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 bg-[#120c1c] text-white text-[8px] p-2 border border-purple-500 whitespace-nowrap z-10 mb-2">
-                                        {['React.js', 'Node.js', 'Python', 'AWS'][i]}
-                                    </div>}
+                    <div className="flex flex-col gap-8">
+                        <div className="bg-[#8b8b8b] p-6 border-4 border-[#373737] rounded-sm shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-2 opacity-20 text-4xl">📚</div>
+                            <h3 className="text-[12px] text-black mb-4 uppercase font-bold border-b border-black/20 pb-2">Certifications</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {['Distributed System Fundamentals', 'API Lifecycle Management', 'Data Integrity & Consistency', 'Backend Threat Mitigation'].map((c, i) => (
+                                    <div key={i} className="bg-[#a0a0a0] p-3 border-2 border-[#505050] text-[11px] text-center flex items-center justify-center font-bold text-[#1f1f1f] shadow-inner hover:bg-[#b0b0b0] transition-colors">
+                                        {c}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            {ACHIEVEMENTS.map((ach, i) => (
+                                <div key={i} className="bg-black/40 border border-white/10 p-3 text-center rounded-sm">
+                                    <div className="text-2xl mb-2">{ach.icon}</div>
+                                    <div className="text-[8px] text-white uppercase">{ach.title}</div>
                                 </div>
                             ))}
                         </div>
@@ -243,85 +388,66 @@ const HtmlContent = ({ setBgTheme, navigate }) => {
                 </div>
             </section>
 
-            {/* EXPERIENCE / QUEST LOG */}
-            <section id="experience" className="py-20">
-                <SectionHeader title="Quest Log" subtitle="Completed Missions" />
-                <div className="space-y-6">
-                    {EXPERIENCE_LOG.map((exp, i) => (
-                        <MinecraftCard key={i} variant="glass" className="border-l-4 border-l-yellow-500/50">
-                            <div className="flex flex-col md:flex-row justify-between mb-2">
-                                <h3 className="text-sm text-yellow-300 font-bold">{exp.title}</h3>
-                                <span className="text-[10px] text-gray-400 bg-black/30 px-2 py-1 rounded">{exp.date}</span>
-                            </div>
-                            <p className="text-[10px] text-gray-300 font-sans">{exp.desc}</p>
-                        </MinecraftCard>
-                    ))}
-                </div>
-            </section>
-
             {/* PROJECTS */}
-            <section id="projects" className="py-20">
-                <SectionHeader title="Constructs" subtitle="Deployed Worlds" />
+            <section id="projects" className="py-20 min-h-[60vh]">
+                <SectionHeader title="My Projects" />
                 <div className="grid md:grid-cols-3 gap-8">
                     {PROJECTS.map((p, i) => (
-                        <MinecraftCard key={i} variant="glass" className="hover:bg-red-900/20 hover:border-red-500/50 group cursor-pointer">
-                            <div className="h-40 bg-black/40 mb-6 border border-white/10 flex items-center justify-center overflow-hidden">
-                                <div className="text-4xl opacity-20 group-hover:scale-110 transition-transform duration-500">Map_{i + 1}</div>
+                        <MinecraftCard key={i} variant="glass" className="hover:bg-blue-900/10 group cursor-pointer h-full border-t-4 border-blue-500">
+                            <div className="h-40 mb-6 border border-white/10 relative overflow-hidden">
+                                <img
+                                    src={p.image}
+                                    alt={p.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                                <div className="absolute inset-0 bg-blue-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             </div>
-                            <div className="text-[8px] font-bold text-orange-400 mb-2 uppercase tracking-wider">{p.type}</div>
-                            <h3 className="text-sm font-bold mb-2">{p.title}</h3>
-                            <p className="text-[10px] text-gray-400 mb-6 leading-relaxed font-sans">{p.desc}</p>
+
+                            <h3 className="text-sm font-bold mb-3 text-blue-400">{p.title}</h3>
+                            <p className="text-[15px] text-gray-400 font-sans leading-5">{p.desc}</p>
+                            <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[8px] text-gray-500">
+                                <span>{p.type}</span>
+                                <span className="text-blue-500/50 group-hover:text-blue-500 transition-colors">LAUNCH →</span>
+                            </div>
                         </MinecraftCard>
                     ))}
                 </div>
             </section>
 
-            {/* CONTACT / FOOTER */}
-            <section id="contact" className="py-20 pb-40">
-                <SectionHeader title="Comms Channel" subtitle="Open Frequency" />
+            {/* CONTACT */}
+            <section id="contact" className="py-20 min-h-[60vh]">
+                <SectionHeader title="Contact Me" />
                 <div className="max-w-2xl mx-auto">
-                    <MinecraftCard variant="paper" className="relative shadow-2xl">
-                        <div className="text-center mb-8">
-                            <h2 className="text-lg font-bold text-[#3e2723] mb-2">Book & Quill</h2>
-                            <p className="text-[#5d4037] text-[10px]">Write a message to the server admin.</p>
+                    <MinecraftCard variant="obsidian" className="text-center p-8 md:p-12">
+                        <h2 className="text-lg font-bold text-purple-400 mb-8 lowercase italic">Email: harshkhatri.cse.gndu@gmail.com</h2>
+                        <div className="space-y-4 mb-8">
+                            <input className="w-full bg-black/40 border-2 border-[#5a4875] p-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-400 transition-all" placeholder="Enter Your Name..." />
+                            <textarea className="w-full bg-black/40 border-2 border-[#5a4875] p-4 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-400 h-40 resize-none transition-all" placeholder="Type your message..." />
                         </div>
-
-                        <form className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold text-[#5d4037] tracking-wider">Player Name</label>
-                                <input type="text" className="w-full bg-transparent border-b-2 border-[#8b5a2b] p-2 text-[#3e2723] focus:outline-none focus:border-[#3e2723] transition-colors font-serif" placeholder="Steve" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-bold text-[#5d4037] tracking-wider">Transmission</label>
-                                <textarea rows="5" className="w-full bg-transparent border-b-2 border-[#8b5a2b] p-2 text-[#3e2723] focus:outline-none focus:border-[#3e2723] transition-colors font-serif resize-none" placeholder="Enter your message here..."></textarea>
-                            </div>
-                            <div className="flex justify-end pt-4">
-                                <button className="px-6 py-3 bg-[#3e2723] text-[#f2e6c9] font-bold hover:bg-[#2d1b18] transition-colors border-2 border-[#8b5a2b] transform hover:-translate-y-1 active:translate-y-0 text-[10px] uppercase">
-                                    Sign & Close
-                                </button>
-                            </div>
-                        </form>
+                        <button className="w-full py-4 bg-purple-700 text-white font-bold hover:bg-purple-600 border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 transition-all text-xs tracking-widest shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+                            Here we Gooo ...
+                        </button>
                     </MinecraftCard>
                 </div>
             </section>
 
-            {/* FOOTER */}
-            <footer className="text-center text-[8px] text-gray-500 py-10 opacity-60">
-                <p>Build v2.0.4 | Seed: 83929312</p>
-                <p className="mt-2">Crafted with React Three Fiber</p>
+            {/* FOOTER - Ends exactly here */}
+            <footer className="py-20 border-t-2 border-white/5 text-center">
+                <div className="mb-8 flex justify-center gap-8 text-[10px] text-gray-500 uppercase tracking-widest">
+                    <a href="https://www.linkedin.com/in/harshkhatri0649/" className="hover:text-white transition-colors">LinkedIn</a>
+                    <a href="https://github.com/HarshKhatri0649" className="hover:text-white transition-colors">GitHub</a>
+                    <a href="mailto:harshkhatri.cse.gndu@gmail.com" className="hover:text-white transition-colors">
+                        Email
+                    </a>                </div>
+                <div className="text-[8px] text-gray-600 uppercase tracking-tighter">
+                    <p>&copy; 2026 HARSH KHATRI. BUILT WITH CRAFT & CODE.</p>
+                </div>
             </footer>
 
         </div>
     );
 };
 
-const ScrollControlsHtml = ({ setBgTheme, navigate }) => {
-    return (
-        <Scroll html style={{ width: '100vw' }}>
-            <HtmlContent setBgTheme={setBgTheme} navigate={navigate} />
-        </Scroll>
-    )
-}
 
 const MainScene = () => {
     const [bgTheme, setBgTheme] = useState('overworld');
@@ -329,14 +455,17 @@ const MainScene = () => {
 
     return (
         <div className="w-full h-screen bg-[#000]">
-            <Canvas shadows>
-                <ScrollControls pages={6} damping={0.3}>
-                    {/* 3D Content Layer */}
+            <Canvas shadows camera={{ position: [0, 0, 10], fov: 50 }}>
+                <fog attach="fog" args={['#87ceeb', 10, 50]} />
+                <ScrollControls pages={8} damping={0.2} style={{ width: '100vw', height: '100vh' }}>
+                    {/* Background & 3D Objects */}
                     <BackgroundManager setBgTheme={setBgTheme} />
-                    <BiomeParticles theme={bgTheme} />
+                    <ScrollObjects />
 
-                    {/* HTML Content Layer */}
-                    <ScrollControlsHtml setBgTheme={setBgTheme} navigate={navigate} />
+                    {/* HTML Content */}
+                    <Scroll html style={{ width: '100vw' }}>
+                        <HtmlContent navigate={navigate} />
+                    </Scroll>
                 </ScrollControls>
             </Canvas>
         </div>
