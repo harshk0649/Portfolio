@@ -1,6 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --mc-green: #5c9e6d;
+  --mc-dirt: #5d4037;
+  --mc-stone: #7d7d7d;
+  --mc-obsidian: #120c1c;
+  --mc-gold: #fbbf24;
+}
+
+body {
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+  background-color: #111;
+  color: #fff;
+}
 
 /* Custom styles for 3D and animations */
 body {
@@ -19,9 +37,17 @@ body {
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .glass {
