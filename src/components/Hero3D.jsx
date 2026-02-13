@@ -1,294 +1,503 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial, Float, Text, Torus, Ring, Cylinder, Cone } from '@react-three/drei';
-import { useRef } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { OrbitControls, Sphere, MeshDistortMaterial, Float, Text, Torus, Ring, Cylinder, Cone, Trail, Stars, Environment, TorusKnot, Icosahedron, Dodecahedron, Octahedron, Box, Plane, MeshTransmissionMaterial, Sphere as DreiSphere } from '@react-three/drei';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
-// Floating Particles Component with Code Symbols
-const FloatingParticles = () => {
-  const particlesRef = useRef();
+// Neural Network Core - Advanced Brain-like Structure
+const NeuralCore = () => {
+  const coreRef = useRef();
+  const [hovered, setHovered] = useState(false);
 
   useFrame((state) => {
-    if (particlesRef.current) {
-      particlesRef.current.rotation.y = state.clock.elapsedTime * 0.1;
+    const time = state.clock.elapsedTime;
+    if (coreRef.current) {
+      coreRef.current.rotation.x = time * 0.05;
+      coreRef.current.rotation.y = time * 0.08;
+      coreRef.current.rotation.z = time * 0.03;
+      coreRef.current.scale.setScalar(1 + Math.sin(time * 1.2) * 0.05);
     }
   });
 
-  const particles = Array.from({ length: 80 }, (_, i) => {
-    const symbols = ['{', '}', '<', '>', '[', ']', '(', ')', '/', '\\', '*', '+', '-', '=', '!', '?'];
-    const symbol = symbols[i % symbols.length];
+  return (
+    <Float speed={1} rotationIntensity={0.3} floatIntensity={0.2}>
+      <group ref={coreRef} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
+        {/* Central Brain Structure */}
+        <TorusKnot args={[2.5, 0.8, 200, 32]} position={[0, 0, 0]}>
+          <MeshTransmissionMaterial
+            color={hovered ? "#00aaff" : "#ff6b9d"}
+            thickness={0.5}
+            roughness={0}
+            transmission={0.9}
+            ior={1.5}
+            chromaticAberration={0.02}
+            backside={true}
+          />
+        </TorusKnot>
 
-    return (
-      <Text
-        key={i}
-        position={[
-          (Math.random() - 0.5) * 25,
-          (Math.random() - 0.5) * 25,
-          (Math.random() - 0.5) * 25,
-        ]}
-        fontSize={0.3}
-        color="#00ff88"
-        font="/fonts/mono.woff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {symbol}
-      </Text>
-    );
+        {/* Neural Connections */}
+        {Array.from({ length: 12 }, (_, i) => {
+          const angle = (i / 12) * Math.PI * 2;
+          const radius = 4;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          const y = Math.sin(angle * 2) * 1.5;
+
+          return (
+            <Trail key={i} width={0.02} length={8} color="#00aaff" attenuation={(t) => t * t}>
+              <Icosahedron args={[0.15]} position={[x, y, z]}>
+                <meshStandardMaterial
+                  color="#00aaff"
+                  emissive="#00aaff"
+                  emissiveIntensity={0.6}
+                  transparent
+                  opacity={0.9}
+                />
+              </Icosahedron>
+            </Trail>
+          );
+        })}
+
+        {/* Energy Pulses */}
+        <Ring args={[3.5, 3.8, 64]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+          <meshBasicMaterial color="#ff6b9d" transparent opacity={0.3} />
+        </Ring>
+        <Ring args={[4.5, 4.8, 64]} rotation={[0, Math.PI / 2, 0]} position={[0, 0, 0]}>
+          <meshBasicMaterial color="#00aaff" transparent opacity={0.2} />
+        </Ring>
+      </group>
+    </Float>
+  );
+};
+
+// DNA Helix - Molecular Structure
+const DNAHelix = () => {
+  const helixRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (helixRef.current) {
+      helixRef.current.rotation.y = time * 0.1;
+      helixRef.current.position.y = Math.sin(time * 0.5) * 0.5;
+    }
   });
+
+  const helix = [];
+  for (let i = 0; i < 20; i++) {
+    const t = i / 20;
+    const angle = t * Math.PI * 4;
+    const radius = 0.8;
+    const height = t * 8 - 4;
+
+    // Two strands
+    helix.push(
+      <Float key={`strand1-${i}`} speed={0.5} rotationIntensity={0.2} floatIntensity={0.1}>
+        <Sphere args={[0.08]} position={[
+          Math.cos(angle) * radius,
+          height,
+          Math.sin(angle) * radius
+        ]}>
+          <meshStandardMaterial color="#ff6b9d" emissive="#ff6b9d" emissiveIntensity={0.4} />
+        </Sphere>
+      </Float>
+    );
+
+    helix.push(
+      <Float key={`strand2-${i}`} speed={0.5} rotationIntensity={0.2} floatIntensity={0.1}>
+        <Sphere args={[0.08]} position={[
+          Math.cos(angle + Math.PI) * radius,
+          height,
+          Math.sin(angle + Math.PI) * radius
+        ]}>
+          <meshStandardMaterial color="#00aaff" emissive="#00aaff" emissiveIntensity={0.4} />
+        </Sphere>
+      </Float>
+    );
+
+    // Connecting rungs
+    if (i < 19) {
+      const nextT = (i + 1) / 20;
+      const nextAngle = nextT * Math.PI * 4;
+      const nextHeight = nextT * 8 - 4;
+
+      helix.push(
+        <Cylinder key={`rung-${i}`} args={[0.02, 0.02, Math.sqrt(
+          Math.pow(Math.cos(nextAngle) * radius - Math.cos(angle) * radius, 2) +
+          Math.pow(nextHeight - height, 2) +
+          Math.pow(Math.sin(nextAngle) * radius - Math.sin(angle) * radius, 2)
+        )]} position={[
+          (Math.cos(angle) * radius + Math.cos(nextAngle) * radius) / 2,
+          (height + nextHeight) / 2,
+          (Math.sin(angle) * radius + Math.sin(nextAngle) * radius) / 2
+        ]} rotation={[
+          Math.atan2(nextHeight - height, Math.sqrt(
+            Math.pow(Math.cos(nextAngle) * radius - Math.cos(angle) * radius, 2) +
+            Math.pow(Math.sin(nextAngle) * radius - Math.sin(angle) * radius, 2)
+          )),
+          0,
+          Math.atan2(
+            Math.sin(nextAngle) * radius - Math.sin(angle) * radius,
+            Math.cos(nextAngle) * radius - Math.cos(angle) * radius
+          )
+        ]}>
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.2} />
+        </Cylinder>
+      );
+    }
+  }
+
+  return <group ref={helixRef} position={[6, 0, 0]}>{helix}</group>;
+};
+
+// Quantum Particles - Advanced Particle System
+const QuantumParticles = () => {
+  const particlesRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (particlesRef.current) {
+      particlesRef.current.rotation.x = time * 0.02;
+      particlesRef.current.rotation.z = time * 0.03;
+    }
+  });
+
+  const particles = useMemo(() => {
+    return Array.from({ length: 50 }, (_, i) => {
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = 2 * Math.PI * Math.random();
+      const radius = 8 + Math.random() * 4;
+
+      return (
+        <Float key={i} speed={0.5 + Math.random()} rotationIntensity={0.3} floatIntensity={0.2}>
+          <DreiSphere args={[0.05 + Math.random() * 0.1]} position={[
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            radius * Math.cos(phi)
+          ]}>
+            <meshStandardMaterial
+              color={["#ff6b9d", "#00aaff", "#ffd93d", "#6bcf7f"][Math.floor(Math.random() * 4)]}
+              emissive={["#ff6b9d", "#00aaff", "#ffd93d", "#6bcf7f"][Math.floor(Math.random() * 4)]}
+              emissiveIntensity={0.6}
+              transparent
+              opacity={0.8}
+            />
+          </DreiSphere>
+        </Float>
+      );
+    });
+  }, []);
 
   return <group ref={particlesRef}>{particles}</group>;
 };
 
-// Floating Tech Stack Icons (Simplified 3D representations)
-const TechIcon = ({ position, color, scale = 1, type }) => {
-  const iconRef = useRef();
+// Holographic Interface - Futuristic UI Elements
+const HolographicInterface = () => {
+  const interfaceRef = useRef();
 
   useFrame((state) => {
-    if (iconRef.current) {
-      iconRef.current.rotation.x = state.clock.elapsedTime * 0.3;
-      iconRef.current.rotation.y = state.clock.elapsedTime * 0.4;
-      iconRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + position[0]) * 0.3;
+    const time = state.clock.elapsedTime;
+    if (interfaceRef.current) {
+      interfaceRef.current.rotation.y = time * 0.05;
     }
   });
 
-  let geometry;
-  switch (type) {
-    case 'react':
-      geometry = <Torus args={[0.8, 0.2, 8, 16]} />;
-      break;
-    case 'node':
-      geometry = <Cylinder args={[0.6, 0.6, 1.2, 8]} />;
-      break;
-    case 'python':
-      geometry = <Cone args={[0.7, 1.4, 8]} />;
-      break;
-    case 'database':
-      geometry = <Cylinder args={[0.5, 0.5, 1.5, 16]} />;
-      break;
-    case 'cloud':
-      geometry = <Sphere args={[0.8, 16, 16]} />;
-      break;
-    default:
-      geometry = <boxGeometry args={[1, 1, 1]} />;
-  }
+  const interfaces = [];
+  const data = [
+    "Neural Network Active",
+    "Quantum Computing Online",
+    "AI Processing: 99.9%",
+    "Data Streams: ∞",
+    "Innovation Engine: ON"
+  ];
 
-  return (
-    <mesh ref={iconRef} position={position} scale={scale}>
-      {geometry}
-      <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.1}
-        transparent
-        opacity={0.8}
-      />
-    </mesh>
-  );
-};
-
-// AI/ML Neural Network Visualization
-const NeuralNetwork = () => {
-  const networkRef = useRef();
-
-  useFrame((state) => {
-    if (networkRef.current) {
-      networkRef.current.rotation.y = state.clock.elapsedTime * 0.1;
-    }
-  });
-
-  const nodes = [];
-  const connections = [];
-
-  // Create neural network nodes
-  for (let layer = 0; layer < 4; layer++) {
-    for (let node = 0; node < (layer === 0 ? 3 : layer === 3 ? 2 : 4); node++) {
-      const x = (layer - 1.5) * 3;
-      const y = (node - 1.5) * 1.5;
-      const z = -5;
-
-      nodes.push(
-        <mesh key={`node-${layer}-${node}`} position={[x, y, z]}>
-          <sphereGeometry args={[0.15, 8, 8]} />
-          <meshStandardMaterial
-            color="#ff6b6b"
-            emissive="#ff6b6b"
-            emissiveIntensity={0.3}
-          />
-        </mesh>
-      );
-
-      // Add connections between layers
-      if (layer < 3) {
-        for (let nextNode = 0; nextNode < (layer === 2 ? 2 : 4); nextNode++) {
-          const nextX = (layer + 0.5 - 1.5) * 3;
-          const nextY = (nextNode - 1.5) * 1.5;
-          const nextZ = -5;
-
-          connections.push(
-            <line key={`connection-${layer}-${node}-${nextNode}`}>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  count={2}
-                  array={new Float32Array([x, y, z, nextX, nextY, nextZ])}
-                  itemSize={3}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial color="#00ff88" opacity={0.3} transparent />
-            </line>
-          );
-        }
-      }
-    }
-  }
-
-  return (
-    <group ref={networkRef}>
-      {nodes}
-      {connections}
-    </group>
-  );
-};
-
-// Floating Cube Component with Enhanced Effects
-const FloatingCube = ({ position, color, scale = 1 }) => {
-  const cubeRef = useRef();
-
-  useFrame((state) => {
-    if (cubeRef.current) {
-      cubeRef.current.rotation.x = state.clock.elapsedTime * 0.5;
-      cubeRef.current.rotation.y = state.clock.elapsedTime * 0.3;
-      cubeRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + position[0]) * 0.5;
-    }
-  });
-
-  return (
-    <mesh ref={cubeRef} position={position} scale={scale}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.1}
-        transparent
-        opacity={0.9}
-      />
-    </mesh>
-  );
-};
-
-// Border-Filling 3D Elements with Coding Theme
-const BorderElements = () => {
-  const elementsRef = useRef();
-
-  useFrame((state) => {
-    if (elementsRef.current) {
-      elementsRef.current.rotation.z = state.clock.elapsedTime * 0.2;
-    }
-  });
-
-  const borderElements = [];
-  const numElements = 24;
-
-  for (let i = 0; i < numElements; i++) {
-    const angle = (i / numElements) * Math.PI * 2;
-    const radius = 8;
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2;
+    const radius = 12;
     const x = Math.cos(angle) * radius;
-    const y = Math.sin(angle) * radius;
+    const z = Math.sin(angle) * radius;
 
-    // Alternate between different coding-themed shapes
-    const shapes = ['cube', 'sphere', 'octahedron', 'tetrahedron'];
-    const shape = shapes[i % shapes.length];
-
-    let geometry;
-    switch (shape) {
-      case 'cube':
-        geometry = <boxGeometry args={[0.25, 0.25, 0.25]} />;
-        break;
-      case 'sphere':
-        geometry = <sphereGeometry args={[0.15, 8, 8]} />;
-        break;
-      case 'octahedron':
-        geometry = <octahedronGeometry args={[0.2]} />;
-        break;
-      case 'tetrahedron':
-        geometry = <tetrahedronGeometry args={[0.2]} />;
-        break;
-      default:
-        geometry = <boxGeometry args={[0.25, 0.25, 0.25]} />;
-    }
-
-    // Coding-themed colors (neon greens, blues, purples)
-    const colors = ['#00ff88', '#0088ff', '#ff0088', '#8800ff', '#00ffff', '#ff8800'];
-    const color = colors[i % colors.length];
-
-    borderElements.push(
-      <mesh key={i} position={[x, y, -2]}>
-        {geometry}
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-        />
-      </mesh>
+    interfaces.push(
+      <Float key={i} speed={0.3} rotationIntensity={0.1} floatIntensity={0.1}>
+        <group position={[x, 2, z]}>
+          {/* Holographic Screen */}
+          <Plane args={[3, 2]} rotation={[0, angle, 0]}>
+            <meshBasicMaterial color="#001122" transparent opacity={0.7} />
+          </Plane>
+          {/* Text */}
+          <Text
+            position={[0, 0, 0.01]}
+            fontSize={0.2}
+            color="#00aaff"
+            font="/fonts/mono.woff"
+            anchorX="center"
+            anchorY="middle"
+            maxWidth={2.8}
+          >
+            {data[i]}
+          </Text>
+          {/* Scanning Line */}
+          <Plane args={[3, 0.02]} position={[0, -0.8, 0.02]} rotation={[0, angle, 0]}>
+            <meshBasicMaterial color="#ff6b9d" transparent opacity={0.8} />
+          </Plane>
+        </group>
+      </Float>
     );
   }
 
-  return <group ref={elementsRef}>{borderElements}</group>;
+  return <group ref={interfaceRef}>{interfaces}</group>;
+};
+
+// Morphing Crystal - Dynamic Geometric Form
+const MorphingCrystal = () => {
+  const crystalRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (crystalRef.current) {
+      crystalRef.current.rotation.x = time * 0.1;
+      crystalRef.current.rotation.y = time * 0.15;
+      crystalRef.current.rotation.z = time * 0.08;
+      crystalRef.current.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    }
+  });
+
+  return (
+    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.3}>
+      <group ref={crystalRef} position={[-6, 0, 0]}>
+        {/* Main Crystal */}
+        <Octahedron args={[1.5]}>
+          <MeshTransmissionMaterial
+            color="#ffd93d"
+            thickness={0.3}
+            roughness={0}
+            transmission={0.8}
+            ior={1.8}
+            chromaticAberration={0.05}
+            backside={true}
+          />
+        </Octahedron>
+
+        {/* Orbiting Fragments */}
+        {Array.from({ length: 6 }, (_, i) => (
+          <Float key={i} speed={2} rotationIntensity={1} floatIntensity={0.5}>
+            <Dodecahedron args={[0.2]} position={[
+              Math.cos(i * Math.PI / 3) * 3,
+              Math.sin(i * Math.PI / 3) * 1.5,
+              Math.sin(i * Math.PI / 3) * 2
+            ]}>
+              <meshStandardMaterial
+                color="#6bcf7f"
+                emissive="#6bcf7f"
+                emissiveIntensity={0.5}
+                transparent
+                opacity={0.9}
+              />
+            </Dodecahedron>
+          </Float>
+        ))}
+      </group>
+    </Float>
+  );
+};
+
+// Energy Vortex - Spiral Energy Field
+const EnergyVortex = () => {
+  const vortexRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (vortexRef.current) {
+      vortexRef.current.rotation.y = time * 0.2;
+    }
+  });
+
+  const vortex = [];
+  for (let i = 0; i < 16; i++) {
+    const t = i / 16;
+    const angle = t * Math.PI * 6;
+    const radius = t * 10;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const y = t * 6 - 3;
+
+    vortex.push(
+      <Trail key={i} width={0.03} length={12} color="#ffd93d" attenuation={(t) => t * t}>
+        <Cone args={[0.1, 0.3]} position={[x, y, z]} rotation={[0, 0, angle]}>
+          <meshStandardMaterial color="#ffd93d" emissive="#ffd93d" emissiveIntensity={0.7} />
+        </Cone>
+      </Trail>
+    );
+  }
+
+  return <group ref={vortexRef} position={[0, -8, 0]}>{vortex}</group>;
+};
+
+// Floating Geometries - Additional Moving 3D Models for More Filling
+const FloatingGeometries = () => {
+  const groupRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (groupRef.current) {
+      groupRef.current.rotation.y = time * 0.05;
+      groupRef.current.rotation.x = Math.sin(time * 0.1) * 0.1;
+    }
+  });
+
+  const geometries = [];
+  const shapes = [
+    { component: Box, args: [1], color: "#ff6b9d", emissive: "#ff6b9d" },
+    { component: Sphere, args: [0.8], color: "#00aaff", emissive: "#00aaff" },
+    { component: Torus, args: [0.6, 0.2], color: "#ffd93d", emissive: "#ffd93d" },
+    { component: Cone, args: [0.5, 1], color: "#6bcf7f", emissive: "#6bcf7f" },
+    { component: Cylinder, args: [0.4, 0.4, 1], color: "#ff4500", emissive: "#ff4500" },
+    { component: Octahedron, args: [0.7], color: "#8a2be2", emissive: "#8a2be2" },
+    { component: Dodecahedron, args: [0.6], color: "#ffa500", emissive: "#ffa500" },
+    { component: Icosahedron, args: [0.5], color: "#00ff7f", emissive: "#00ff7f" },
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    const shape = shapes[i % shapes.length];
+    const angle = (i / 20) * Math.PI * 2;
+    const radius = 8 + Math.random() * 4;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const y = (Math.random() - 0.5) * 10;
+
+    geometries.push(
+      <Float key={i} speed={0.5 + Math.random() * 0.5} rotationIntensity={0.5 + Math.random() * 0.5} floatIntensity={0.3 + Math.random() * 0.3}>
+        <shape.component args={shape.args} position={[x, y, z]}>
+          <meshStandardMaterial
+            color={shape.color}
+            emissive={shape.emissive}
+            emissiveIntensity={0.4 + Math.random() * 0.3}
+            transparent
+            opacity={0.8}
+          />
+        </shape.component>
+      </Float>
+    );
+  }
+
+  return <group ref={groupRef}>{geometries}</group>;
+};
+
+// Creative Particle Swarm - Dynamic Swarm of Particles
+const ParticleSwarm = () => {
+  const swarmRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (swarmRef.current) {
+      swarmRef.current.rotation.x = time * 0.03;
+      swarmRef.current.rotation.z = time * 0.04;
+    }
+  });
+
+  const particles = useMemo(() => {
+    return Array.from({ length: 100 }, (_, i) => {
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = 2 * Math.PI * Math.random();
+      const radius = 12 + Math.random() * 6;
+
+      return (
+        <Float key={i} speed={1 + Math.random()} rotationIntensity={0.5} floatIntensity={0.4}>
+          <DreiSphere args={[0.03 + Math.random() * 0.05]} position={[
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            radius * Math.cos(phi)
+          ]}>
+            <meshStandardMaterial
+              color={["#ff6b9d", "#00aaff", "#ffd93d", "#6bcf7f", "#ff4500"][Math.floor(Math.random() * 5)]}
+              emissive={["#ff6b9d", "#00aaff", "#ffd93d", "#6bcf7f", "#ff4500"][Math.floor(Math.random() * 5)]}
+              emissiveIntensity={0.8}
+              transparent
+              opacity={0.9}
+            />
+          </DreiSphere>
+        </Float>
+      );
+    });
+  }, []);
+
+  return <group ref={swarmRef}>{particles}</group>;
+};
+
+// Morphing Torus Field - Creative Torus Arrangements
+const MorphingTorusField = () => {
+  const fieldRef = useRef();
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (fieldRef.current) {
+      fieldRef.current.rotation.y = time * 0.08;
+      fieldRef.current.rotation.x = Math.sin(time * 0.2) * 0.2;
+    }
+  });
+
+  const toruses = [];
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const radius = 10;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const y = Math.sin(angle * 3) * 2;
+
+    toruses.push(
+      <Float key={i} speed={0.8} rotationIntensity={0.6} floatIntensity={0.4}>
+        <Torus args={[1, 0.3, 16, 100]} position={[x, y, z]} rotation={[angle, angle * 2, angle * 0.5]}>
+          <MeshTransmissionMaterial
+            color={["#ff6b9d", "#00aaff", "#ffd93d", "#6bcf7f"][i % 4]}
+            thickness={0.2}
+            roughness={0}
+            transmission={0.7}
+            ior={1.6}
+            chromaticAberration={0.03}
+            backside={true}
+          />
+        </Torus>
+      </Float>
+    );
+  }
+
+  return <group ref={fieldRef}>{toruses}</group>;
 };
 
 const Hero3D = () => {
   return (
     <div className="absolute inset-0 z-10">
-      <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-        <OrbitControls enableZoom={false} enablePan={false} enableRotate={true} autoRotate autoRotateSpeed={0.5} />
+      <Canvas camera={{ position: [0, 0, 20], fov: 60 }}>
+        <OrbitControls enableZoom={false} enablePan={false} enableRotate={true} autoRotate autoRotateSpeed={0.05} />
 
-        {/* Enhanced Lighting */}
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[2, 1, 1]} intensity={1.2} />
-        <pointLight position={[-2, -1, -1]} intensity={0.7} color="#667eea" />
-        <spotLight position={[0, 10, 0]} angle={0.3} penumbra={1} intensity={0.8} />
-        <pointLight position={[3, -3, -2]} intensity={0.5} color="#00ff88" />
+        {/* Advanced Lighting Setup */}
+        <ambientLight intensity={0.1} />
+        <directionalLight position={[10, 10, 5]} intensity={0.8} />
+        <pointLight position={[-10, -10, -10]} intensity={1.2} color="#00aaff" />
+        <spotLight position={[0, 20, 0]} angle={0.4} penumbra={1} intensity={1.5} color="#ff6b9d" />
+        <pointLight position={[10, -10, 10]} intensity={1} color="#ffd93d" />
+        <pointLight position={[-10, 10, -10]} intensity={0.8} color="#6bcf7f" />
 
-        {/* Main Sphere - AI/ML Brain */}
-        <Float speed={1.5} rotationIntensity={1} floatIntensity={0.5}>
-          <Sphere args={[1, 100, 200]} scale={2.7}>
-            <MeshDistortMaterial
-              color="#667eea"
-              attach="material"
-              distort={0.3}
-              speed={1.5}
-              roughness={0}
-              metalness={0.8}
-            />
-          </Sphere>
-        </Float>
+        {/* Enhanced Environment */}
+        <Environment preset="dawn" />
+        <Stars radius={300} depth={100} count={15000} factor={8} saturation={0} fade speed={0.2} />
 
-        {/* Tech Stack Icons */}
-        <TechIcon position={[-5, 3, -3]} color="#61dafb" scale={0.6} type="react" />
-        <TechIcon position={[5, 2, -4]} color="#68c847" scale={0.5} type="node" />
-        <TechIcon position={[-4, -2, -2]} color="#3776ab" scale={0.7} type="python" />
-        <TechIcon position={[4, -3, -3]} color="#336791" scale={0.6} type="database" />
-        <TechIcon position={[0, 4, -4]} color="#ff6b35" scale={0.5} type="cloud" />
+        {/* Core Components */}
+        <NeuralCore />
+        <DNAHelix />
+        <QuantumParticles />
+        <HolographicInterface />
+        <MorphingCrystal />
+        <EnergyVortex />
 
-        {/* AI/ML Neural Network */}
-        <NeuralNetwork />
+        {/* Additional Creative 3D Elements */}
+        <FloatingGeometries />
+        <ParticleSwarm />
+        <MorphingTorusField />
 
-        {/* Floating Geometric Shapes */}
-        <FloatingCube position={[-4, 2, -2]} color="#ff6b6b" scale={0.8} />
-        <FloatingCube position={[4, -1, -3]} color="#4ecdc4" scale={0.6} />
-        <FloatingCube position={[0, -3, -1]} color="#45b7d1" scale={0.7} />
-
-        {/* Additional Coding 3D Elements */}
-        <FloatingCube position={[-2, 4, -3]} color="#00ff88" scale={0.5} />
-        <FloatingCube position={[3, 3, -2]} color="#0088ff" scale={0.4} />
-        <FloatingCube position={[-3, -2, -4]} color="#ff0088" scale={0.6} />
-        <FloatingCube position={[2, -4, -1]} color="#8800ff" scale={0.5} />
-
-        {/* Border-Filling Elements */}
-        <BorderElements />
-
-        {/* Floating Code Symbol Particles */}
-        <FloatingParticles />
+        {/* Atmospheric Effects */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -12, 0]}>
+          <ringGeometry args={[15, 25, 128]} />
+          <meshBasicMaterial color="#00aaff" transparent opacity={0.02} />
+        </mesh>
       </Canvas>
     </div>
   );
