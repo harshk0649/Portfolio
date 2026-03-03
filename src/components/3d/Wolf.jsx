@@ -1,69 +1,51 @@
-import { useRef } from 'react';
+import { useRef, useMemo, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 
-const Wolf = (props) => {
+const Wolf = forwardRef((props, ref) => {
+    const { scene, animations } = useGLTF('/Portfolio/models/wolf_dog_minecraft.glb');
     const group = useRef();
-    const tail = useRef();
-    const head = useRef();
+    const mixer = useRef();
 
-    useFrame((state) => {
-        const t = state.clock.getElapsedTime();
-        if (tail.current) {
-            tail.current.rotation.z = Math.sin(t * 10) * 0.2;
+    useImperativeHandle(ref, () => group.current);
+
+    // Setup animations if any
+    useEffect(() => {
+        if (animations && animations.length > 0) {
+            mixer.current = new THREE.AnimationMixer(scene);
+            animations.forEach(clip => {
+                mixer.current.clipAction(clip).play();
+            });
         }
-        if (head.current) {
-            head.current.rotation.y = Math.sin(t * 2) * 0.1;
+    }, [animations, scene]);
+
+    const innerGroup = useRef();
+
+    useFrame((state, delta) => {
+        if (mixer.current) mixer.current.update(delta);
+        const t = state.clock.getElapsedTime();
+
+        if (innerGroup.current) {
+            // "Minecraft" style jumping/floating
+            innerGroup.current.position.y = Math.abs(Math.sin(t * 3)) * 0.4;
+            // Slight tilt when moving
+            innerGroup.current.rotation.z = Math.sin(t * 2) * 0.05;
         }
     });
 
     return (
         <group ref={group} {...props} dispose={null}>
-            {/* Body */}
-            <mesh position={[0, 0.8, 0]} rotation={[0, 0, 0]}>
-                <boxGeometry args={[0.6, 0.6, 1.2]} />
-                <meshStandardMaterial color="#dddddd" />
-            </mesh>
-
-            {/* Head */}
-            <group ref={head} position={[0, 1.2, 0.6]}>
-                <mesh position={[0, 0, 0.2]}>
-                    <boxGeometry args={[0.5, 0.5, 0.5]} />
-                    <meshStandardMaterial color="#dddddd" />
-                </mesh>
-                {/* Nose */}
-                <mesh position={[0, -0.1, 0.5]}>
-                    <boxGeometry args={[0.2, 0.2, 0.3]} />
-                    <meshStandardMaterial color="#dddddd" />
-                </mesh>
-            </group>
-
-            {/* Legs (Static for now) */}
-            <mesh position={[-0.2, 0.3, 0.5]}>
-                <boxGeometry args={[0.2, 0.6, 0.2]} />
-                <meshStandardMaterial color="#dddddd" />
-            </mesh>
-            <mesh position={[0.2, 0.3, 0.5]}>
-                <boxGeometry args={[0.2, 0.6, 0.2]} />
-                <meshStandardMaterial color="#dddddd" />
-            </mesh>
-            <mesh position={[-0.2, 0.3, -0.5]}>
-                <boxGeometry args={[0.2, 0.6, 0.2]} />
-                <meshStandardMaterial color="#dddddd" />
-            </mesh>
-            <mesh position={[0.2, 0.3, -0.5]}>
-                <boxGeometry args={[0.2, 0.6, 0.2]} />
-                <meshStandardMaterial color="#dddddd" />
-            </mesh>
-
-            {/* Tail */}
-            <group ref={tail} position={[0, 0.8, -0.6]}>
-                <mesh position={[0, 0, -0.3]} rotation={[0.5, 0, 0]}>
-                    <boxGeometry args={[0.15, 0.15, 0.6]} />
-                    <meshStandardMaterial color="#dddddd" />
-                </mesh>
+            <group ref={innerGroup}>
+                <primitive object={scene} />
             </group>
         </group>
     );
-};
+});
+
+Wolf.displayName = 'Wolf';
+
+// Preload the model
+useGLTF.preload('/Portfolio/models/wolf_dog_minecraft.glb');
 
 export default Wolf;

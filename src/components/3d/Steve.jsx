@@ -1,100 +1,47 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react';
+import { useRef, forwardRef, useImperativeHandle, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 const Steve = forwardRef((props, ref) => {
+    const { scene, animations } = useGLTF('/Portfolio/models/minecraft_steve_character.glb');
     const group = useRef();
-    const leftLeg = useRef();
-    const rightLeg = useRef();
-    const leftArm = useRef();
-    const rightArm = useRef();
-    const head = useRef();
+    const mixer = useRef();
 
     useImperativeHandle(ref, () => group.current);
 
-    useFrame((state) => {
+    // Setup animations if any exist in the GLB
+    useEffect(() => {
+        if (animations && animations.length > 0) {
+            mixer.current = new THREE.AnimationMixer(scene);
+            animations.forEach(clip => {
+                const action = mixer.current.clipAction(clip);
+                action.play();
+            });
+        }
+    }, [animations, scene]);
+
+    useFrame((state, delta) => {
+        if (mixer.current) mixer.current.update(delta);
         const t = state.clock.getElapsedTime();
-
-        // Walking animation
-        if (leftLeg.current && rightLeg.current) {
-            leftLeg.current.rotation.x = Math.sin(t * 5) * 0.5;
-            rightLeg.current.rotation.x = Math.sin(t * 5 + Math.PI) * 0.5;
-        }
-
-        // Arm swing
-        if (leftArm.current && rightArm.current) {
-            leftArm.current.rotation.x = Math.sin(t * 5 + Math.PI) * 0.5;
-            rightArm.current.rotation.x = Math.sin(t * 5) * 0.5;
-        }
-
-        // Head bob
-        if (head.current) {
-            head.current.rotation.y = Math.sin(t * 2) * 0.1;
+        if (group.current) {
+            // Slower head bob for more "survival" feel if no animation
+            if (!mixer.current) {
+                group.current.position.y = props.position?.[1] + Math.sin(t * 2) * 0.05;
+            }
         }
     });
 
     return (
         <group ref={group} {...props} dispose={null}>
-            {/* Head */}
-            <mesh ref={head} position={[0, 1.4, 0]}>
-                <boxGeometry args={[0.4, 0.4, 0.4]} />
-                <meshStandardMaterial color="#f0bca6" /> {/* Skin */}
-                {/* Face feature */}
-                <mesh position={[0, 0, 0.21]}>
-                    <boxGeometry args={[0.3, 0.1, 0.01]} />
-                    <meshStandardMaterial color="#331d15" />
-                </mesh>
-            </mesh>
-
-            {/* Body */}
-            <mesh position={[0, 0.9, 0]}>
-                <boxGeometry args={[0.4, 0.6, 0.2]} />
-                <meshStandardMaterial color="#00aaaa" /> {/* Cyan Shirt */}
-            </mesh>
-
-            {/* Right Arm */}
-            <group ref={rightArm} position={[0.3, 1.1, 0]}>
-                <mesh position={[0, -0.3, 0]}>
-                    <boxGeometry args={[0.2, 0.6, 0.2]} />
-                    <meshStandardMaterial color="#f0bca6" />
-                </mesh>
-                <mesh position={[0, -0.1, 0]}> {/* Sleeve */}
-                    <boxGeometry args={[0.21, 0.2, 0.21]} />
-                    <meshStandardMaterial color="#00aaaa" />
-                </mesh>
-            </group>
-
-            {/* Left Arm */}
-            <group ref={leftArm} position={[-0.3, 1.1, 0]}>
-                <mesh position={[0, -0.3, 0]}>
-                    <boxGeometry args={[0.2, 0.6, 0.2]} />
-                    <meshStandardMaterial color="#f0bca6" />
-                </mesh>
-                <mesh position={[0, -0.1, 0]}> {/* Sleeve */}
-                    <boxGeometry args={[0.21, 0.2, 0.21]} />
-                    <meshStandardMaterial color="#00aaaa" />
-                </mesh>
-            </group>
-
-            {/* Right Leg */}
-            <group ref={rightLeg} position={[0.1, 0.6, 0]}>
-                <mesh position={[0, -0.3, 0]}>
-                    <boxGeometry args={[0.2, 0.6, 0.2]} />
-                    <meshStandardMaterial color="#3333cc" /> {/* Blue Pants */}
-                </mesh>
-            </group>
-
-            {/* Left Leg */}
-            <group ref={leftLeg} position={[-0.1, 0.6, 0]}>
-                <mesh position={[0, -0.3, 0]}>
-                    <boxGeometry args={[0.2, 0.6, 0.2]} />
-                    <meshStandardMaterial color="#3333cc" />
-                </mesh>
-            </group>
+            <primitive object={scene} />
         </group>
     );
 });
 
 Steve.displayName = 'Steve';
+
+// Preload the model
+useGLTF.preload('/Portfolio/models/minecraft_steve_character.glb');
 
 export default Steve;

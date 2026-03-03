@@ -1,69 +1,53 @@
-import { useRef } from 'react';
+import { useRef, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 
-const Dragon = (props) => {
+const Dragon = forwardRef((props, ref) => {
+    const { scene, animations } = useGLTF('/Portfolio/models/minecraft_ender_dragon.glb');
     const group = useRef();
-    const leftWing = useRef();
-    const rightWing = useRef();
+    const mixer = useRef();
 
-    useFrame((state) => {
-        const t = state.clock.getElapsedTime();
-        if (leftWing.current && rightWing.current) {
-            leftWing.current.rotation.z = Math.sin(t * 8) * 0.5;
-            rightWing.current.rotation.z = -Math.sin(t * 8) * 0.5;
+    useImperativeHandle(ref, () => group.current);
+
+    // Setup animations if any
+    useEffect(() => {
+        if (animations && animations.length > 0) {
+            mixer.current = new THREE.AnimationMixer(scene);
+            animations.forEach(clip => {
+                const action = mixer.current.clipAction(clip);
+                action.play();
+            });
         }
-        if (group.current) {
-            group.current.position.y = 8 + Math.sin(t * 1) * 2;
-            group.current.rotation.y += 0.005;
+    }, [animations, scene]);
+
+    const innerGroup = useRef();
+
+    useFrame((state, delta) => {
+        if (mixer.current) mixer.current.update(delta);
+        const t = state.clock.getElapsedTime();
+
+        if (innerGroup.current) {
+            // Floating movement on the INNER group
+            innerGroup.current.position.y = Math.sin(t * 1) * 0.5;
+            // Slight rotation for detail
+            innerGroup.current.rotation.x = Math.sin(t * 0.5) * 0.05;
+            innerGroup.current.rotation.z = Math.cos(t * 0.5) * 0.02;
         }
     });
 
     return (
         <group ref={group} {...props} dispose={null}>
-            {/* Body */}
-            <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[1, 1, 3]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
-
-            {/* Head */}
-            <mesh position={[0, 0.5, 1.8]}>
-                <boxGeometry args={[0.8, 0.8, 1.2]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
-
-            {/* Eyes */}
-            <mesh position={[0.25, 0.6, 2.2]}>
-                <boxGeometry args={[0.1, 0.1, 0.1]} />
-                <meshStandardMaterial color="#a0f" emissive="#a0f" emissiveIntensity={2} />
-            </mesh>
-            <mesh position={[-0.25, 0.6, 2.2]}>
-                <boxGeometry args={[0.1, 0.1, 0.1]} />
-                <meshStandardMaterial color="#a0f" emissive="#a0f" emissiveIntensity={2} />
-            </mesh>
-
-
-            {/* Wings */}
-            <group ref={leftWing} position={[0.5, 0.5, 0.5]}>
-                <mesh position={[1.5, 0, 0]}>
-                    <boxGeometry args={[3, 0.1, 2]} />
-                    <meshStandardMaterial color="#222" />
-                </mesh>
+            <group ref={innerGroup}>
+                <primitive object={scene} />
             </group>
-            <group ref={rightWing} position={[-0.5, 0.5, 0.5]}>
-                <mesh position={[-1.5, 0, 0]}>
-                    <boxGeometry args={[3, 0.1, 2]} />
-                    <meshStandardMaterial color="#222" />
-                </mesh>
-            </group>
-
-            {/* Tail */}
-            <mesh position={[0, 0, -2]}>
-                <boxGeometry args={[0.6, 0.6, 2]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
         </group>
     );
-};
+});
+
+Dragon.displayName = 'Dragon';
+
+// Preload the model
+useGLTF.preload('/Portfolio/models/minecraft_ender_dragon.glb');
 
 export default Dragon;

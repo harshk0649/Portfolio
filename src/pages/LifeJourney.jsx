@@ -1,103 +1,37 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { ScrollControls, useScroll, Text, Float, PerspectiveCamera, Environment, Stars, Instance, Instances, RoundedBox, useTexture } from '@react-three/drei';
+import { ScrollControls, useScroll, Text, Float, PerspectiveCamera, Environment, Stars, useGLTF, RoundedBox } from '@react-three/drei';
 import { Suspense, useRef, useMemo, useState, useEffect, forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import * as THREE from 'three';
-import { useSpring, animated } from '@react-spring/three';
 
 // --- Pro Voxel Assets ---
 
 const HighResCar = forwardRef(({ ...props }, ref) => {
-    // Car Group with Headlights attached
-    const leftHeadlight = useRef();
-    const rightHeadlight = useRef();
+    const { scene, animations } = useGLTF('/Portfolio/models/transformers_revenge_of_the_fallen_bumblebee_car.glb');
+    const mixer = useRef();
 
-    useFrame(() => {
-        if (ref && ref.current && leftHeadlight.current && rightHeadlight.current) {
-            const target = new THREE.Vector3(0, 0, 30);
-            leftHeadlight.current.target.position.copy(target);
-            leftHeadlight.current.target.updateMatrixWorld();
-            rightHeadlight.current.target.position.copy(target);
-            rightHeadlight.current.target.updateMatrixWorld();
+    useEffect(() => {
+        if (animations && animations.length > 0) {
+            mixer.current = new THREE.AnimationMixer(scene);
+            // Play all animations or just the first one
+            animations.forEach(clip => {
+                mixer.current.clipAction(clip).play();
+            });
         }
+    }, [animations, scene]);
+
+    useFrame((state, delta) => {
+        if (mixer.current) mixer.current.update(delta);
     });
 
     return (
         <group ref={ref} {...props} dispose={null}>
-            {/* Chassis - Rounded for Premium Feel */}
-            <RoundedBox args={[2.2, 0.7, 4.8]} radius={0.1} smoothness={4} position={[0, 0.7, 0]} castShadow receiveShadow>
-                <meshStandardMaterial color="#991b1b" metalness={0.6} roughness={0.2} envMapIntensity={1.5} />
-            </RoundedBox>
-
-            {/* Cabin */}
-            <RoundedBox args={[1.9, 0.8, 2.8]} radius={0.05} smoothness={4} position={[0, 1.35, -0.6]} castShadow receiveShadow>
-                <meshStandardMaterial color="#7f1d1d" metalness={0.6} roughness={0.2} />
-            </RoundedBox>
-
-            {/* Windshield */}
-            <mesh position={[0, 1.3, 0.9]} rotation={[Math.PI / 5, 0, 0]}>
-                <planeGeometry args={[1.8, 0.9]} />
-                <meshStandardMaterial color="#93c5fd" transparent opacity={0.7} metalness={0.9} roughness={0} />
-            </mesh>
-
-            {/* Spoiler */}
-            <RoundedBox args={[2.4, 0.1, 0.8]} radius={0.05} smoothness={4} position={[0, 1.4, -2.4]}>
-                <meshStandardMaterial color="#111" />
-            </RoundedBox>
-            <mesh position={[-0.9, 1.0, -2.4]}>
-                <cylinderGeometry args={[0.05, 0.05, 0.4]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
-            <mesh position={[0.9, 1.0, -2.4]}>
-                <cylinderGeometry args={[0.05, 0.05, 0.4]} />
-                <meshStandardMaterial color="#111" />
-            </mesh>
-
-            {/* Wheels - Detailed */}
-            {[[-1.2, 1.8], [1.2, 1.8], [-1.2, -1.8], [1.2, -1.8]].map((pos, i) => (
-                <group key={i} position={[pos[0], 0.45, pos[1]]}>
-                    <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-                        <cylinderGeometry args={[0.45, 0.45, 0.7, 32]} />
-                        <meshStandardMaterial color="#171717" roughness={0.8} />
-                    </mesh>
-                    {/* HUB */}
-                    <mesh rotation={[0, 0, Math.PI / 2]} position={[pos[0] > 0 ? 0.36 : -0.36, 0, 0]}>
-                        <cylinderGeometry args={[0.25, 0.25, 0.1, 16]} />
-                        <meshStandardMaterial color="#e5e5e5" metalness={0.8} roughness={0.2} />
-                    </mesh>
-                </group>
-            ))}
-
-            {/* Headlights Glow */}
-            <mesh position={[-0.7, 0.7, 2.41]}>
-                <boxGeometry args={[0.6, 0.25, 0.1]} />
-                <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={5} />
-            </mesh>
-            <mesh position={[0.7, 0.7, 2.41]}>
-                <boxGeometry args={[0.6, 0.25, 0.1]} />
-                <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={5} />
-            </mesh>
-
-            {/* Tail Lights Glow */}
-            <mesh position={[-0.7, 0.8, -2.41]}>
-                <boxGeometry args={[0.6, 0.2, 0.1]} />
-                <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3} />
-            </mesh>
-            <mesh position={[0.7, 0.8, -2.41]}>
-                <boxGeometry args={[0.6, 0.2, 0.1]} />
-                <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3} />
-            </mesh>
-
-            <spotLight ref={leftHeadlight} position={[-0.6, 0.7, 2.5]} angle={0.5} penumbra={0.5} intensity={10} distance={60} color="#fff" castShadow />
-            <spotLight ref={rightHeadlight} position={[0.6, 0.7, 2.5]} angle={0.5} penumbra={0.5} intensity={10} distance={60} color="#fff" castShadow />
-
+            <primitive object={scene} scale={2.0} rotation={[0, Math.PI, 0]} position={[0, -1, 0]} />
         </group>
     );
 });
 
-// --- Dense Environment Instances ---
-
-// Buildings component removed due to CityContext error and it was unused
+useGLTF.preload('/Portfolio/models/transformers_revenge_of_the_fallen_bumblebee_car.glb');
 
 const CityBlock = ({ position }) => {
     // Pro Voxel Buildings - varying sizes
@@ -113,29 +47,14 @@ const CityBlock = ({ position }) => {
                 <meshStandardMaterial color={Math.random() > 0.6 ? "#1e293b" : "#0f172a"} roughness={0.3} />
             </mesh>
 
-            {Array.from({ length: Math.floor(height) }).map((_, y) => (
-                Array.from({ length: Math.floor(width / 1.5) }).map((__, x) => (
-                    Math.random() > 0.8 && (
-                        <mesh key={`${x}-${y}`} position={[
-                            (x - width / 3) * 1.5,
-                            y + 1,
-                            depth / 2 + 0.05
-                        ]}>
-                            <planeGeometry args={[0.6, 0.6]} />
-                            <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={2} toneMapped={false} />
-                        </mesh>
-                    )
-                ))
-            ))}
+            {/* Simple Window Detail (Single Mesh) */}
+            <mesh position={[0, height - 2, depth / 2 + 0.1]}>
+                <planeGeometry args={[width * 0.8, 1]} />
+                <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={1} toneMapped={false} />
+            </mesh>
         </group>
     );
 }
-
-const Trees = () => (
-    // Placeholder for Instance logic if we were using purely raw instances
-    // But for now we use functional component distribution for ease of "Look" customization
-    null
-)
 
 const VoxelTree = ({ position }) => {
     // Dense, cute, professional voxel tree
@@ -166,33 +85,24 @@ const VoxelTree = ({ position }) => {
 const StreetLight = ({ position, rotation }) => (
     <group position={position} rotation={rotation}>
         <mesh position={[0, 3, 0]}>
-            <cylinderGeometry args={[0.2, 0.25, 6]} />
+            <cylinderGeometry args={[0.2, 0.25, 6, 8]} />
             <meshStandardMaterial color="#333" />
         </mesh>
         <mesh position={[1, 5.8, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.15, 0.15, 2]} />
+            <cylinderGeometry args={[0.15, 0.15, 2, 8]} />
             <meshStandardMaterial color="#333" />
         </mesh>
         <group position={[2, 5.5, 0]}>
-            <boxGeometry args={[0.5, 0.2, 0.5]} />
-            <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={3} />
-            <spotLight
-                position={[0, -0.5, 0]}
-                angle={0.8}
-                penumbra={0.5}
-                intensity={5}
-                distance={15}
-                color="#fbbf24"
-                target-position={[0, -10, 0]}
-            />
+            <mesh>
+                <boxGeometry args={[0.5, 0.2, 0.5]} />
+                <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={5} toneMapped={false} />
+            </mesh>
         </group>
     </group>
-)
+);
 
-// --- CHECKPOINTS w/ BILLBOARDS ---
-
-const InfoBillboard = ({ position, title, content, rotation = [0, 0, 0] }) => (
-    <group position={position} rotation={rotation}>
+const InfoBillboard = forwardRef(({ position, title, content, rotation = [0, 0, 0] }, ref) => (
+    <group ref={ref} position={position} rotation={rotation}>
         {/* Post - Moved back to avoid blocking road/text */}
         <mesh position={[0, -2, -1]}>
             <cylinderGeometry args={[0.5, 0.5, 20]} />
@@ -201,7 +111,7 @@ const InfoBillboard = ({ position, title, content, rotation = [0, 0, 0] }) => (
 
         {/* Board - Even larger and lifted higher */}
         <group position={[0, 8, -0.5]}>
-            <RoundedBox args={[22, 14, 0.6]} radius={0.2} smoothness={2}>
+            <RoundedBox args={[22, 14, 0.6]} radius={0.2} smoothness={1}>
                 <meshStandardMaterial color="#0f172a" />
             </RoundedBox>
             {/* Border Glow */}
@@ -225,9 +135,8 @@ const InfoBillboard = ({ position, title, content, rotation = [0, 0, 0] }) => (
             <meshStandardMaterial color="#f97316" emissive="#f97316" opacity={0.5} transparent />
         </mesh>
     </group>
-)
+));
 
-// --- ROAD LOGIC ---
 const CurveRoad = () => {
     const curve = useMemo(() => {
         return new THREE.CatmullRomCurve3([
@@ -244,7 +153,7 @@ const CurveRoad = () => {
     }, []);
 
     const tubeGeometry = useMemo(() => {
-        return new THREE.TubeGeometry(curve, 500, 7, 24, false); // more segments for longer road
+        return new THREE.TubeGeometry(curve, 300, 7, 12, false); // Reduced resolution for performance
     }, [curve]);
 
     return { curve, tubeGeometry };
@@ -254,11 +163,7 @@ const Experience = () => {
     const scroll = useScroll();
     const carRef = useRef();
     const { curve, tubeGeometry } = CurveRoad();
-    const [points, setPoints] = useState([]);
-
-    useEffect(() => {
-        setPoints(curve.getPoints(150)); // More sample points
-    }, [curve]);
+    const points = useMemo(() => curve.getPoints(100), [curve]); // Reduced point count
 
     useFrame((state) => {
         const offset = scroll.offset;
@@ -285,16 +190,16 @@ const Experience = () => {
     return (
         <>
             <ambientLight intensity={0.6} color="#ffd1b3" />
-            <Stars radius={300} depth={50} count={3000} factor={4} saturation={0.5} fade speed={0.5} />
+            <Stars radius={300} depth={50} count={2000} factor={4} saturation={0.5} fade speed={0.5} />
             <Environment preset="sunset" />
-            <fog attach="fog" args={['#ff7e5f', 30, 220]} />
+            <fog attach="fog" args={['#ff7e5f', 30, 250]} />
 
             {/* The Car */}
             <HighResCar ref={carRef} />
 
             {/* Road */}
             <mesh geometry={tubeGeometry} receiveShadow position={[0, 0, 0]}>
-                <meshStandardMaterial color="#1f1f1f" roughness={0.3} />
+                <meshStandardMaterial color="#1f1f1f" roughness={0.5} />
             </mesh>
 
             {/* Ground */}
@@ -303,108 +208,63 @@ const Experience = () => {
                 <meshStandardMaterial color="#020617" roughness={1} />
             </mesh>
 
-            {/* Dense Environment */}
+            {/* Optimized Environment */}
             {points.map((p, i) => {
-                const tangent = curve.getTangentAt(i / 150);
+                if (i % 2 !== 0) return null; // Half the objects
+                const tangent = curve.getTangentAt(i / 100);
                 const up = new THREE.Vector3(0, 1, 0);
                 const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
 
-                const dist = 18 + Math.random() * 25;
+                const dist = 25 + Math.random() * 20;
                 const leftPos = p.clone().add(right.clone().multiplyScalar(-dist));
                 const rightPos = p.clone().add(right.clone().multiplyScalar(dist));
-                const terrainY = p.y - 10;
+                const terrainY = p.y - 12;
                 leftPos.y = terrainY;
                 rightPos.y = terrainY;
 
-                const lightDist = 9;
+                const lightDist = 10;
                 const leftLightPos = p.clone().add(right.clone().multiplyScalar(-lightDist));
-                const rightLightPos = p.clone().add(right.clone().multiplyScalar(lightDist));
                 leftLightPos.y = p.y;
-                rightLightPos.y = p.y;
 
                 return (
                     <group key={i}>
-                        {i % 2 === 0 && <CityBlock position={leftPos} />}
-                        <VoxelTree position={rightPos} />
-                        {i % 5 === 0 && (
+                        {i % 4 === 0 && <CityBlock position={leftPos} />}
+                        {i % 4 === 2 && <VoxelTree position={rightPos} />}
+                        {i % 10 === 0 && (
                             <StreetLight position={leftLightPos} rotation={[0, -Math.PI / 4, 0]} />
                         )}
                     </group>
                 )
             })}
 
-            {/* BILLBOARDS AT CHECKPOINTS - Strategically aligned with curve */}
-            <InfoBillboard
-                position={[25, 7, -60]}
-                rotation={[0, -0.3, 0]}
-                title="My collage"
-                content="Completed B.Tech CSE at GNDU with CGPA 8.0. Strengthened core concepts in algorithms and database systems."
-            />
-            <InfoBillboard
-                position={[-60, 8, -180]}
-                rotation={[0, 0.5, 0]}
-                title="My Internship"
-                content="MERN Stack Intern. Developed full-stack modules and integrated REST APIs."
-            />
-            <InfoBillboard
-                position={[45, 8, -320]}
-                rotation={[0, -0.4, 0]}
-                title="Cybertron Technologies"
-                content="Jr. Software Developer working on secure backend systems and RESTful APIs."
-            />
-            <InfoBillboard
-                position={[20, 12, -480]}
-                rotation={[0, 1.2, 0]}
-                title="Learning Era"
-                content="Strengthened fundamentals in system design, databases, and backend architecture."
-            />
-            <InfoBillboard
-                position={[45, 8, -660]}
-                rotation={[0, -0.2, 0]}
-                title="Cybersecurity"
-                content="Exploring secure coding practices, API protection strategies, authentication flows, and vulnerability awareness in backend systems."
-            />
-            <InfoBillboard
-                position={[-65, 10, -860]}
-                rotation={[0, 0.4, 0]}
-                title="Next Phase"
-                content="Advancing toward cloud-native architectures, distributed systems, and high-performance backend engineering at scale"
-            />
+            {/* BILLBOARDS */}
+            <InfoBillboard position={[25, 7, -60]} rotation={[0, -0.3, 0]} title="My collage" content="Completed B.Tech CSE at GNDU with CGPA 8.0. Strengthened core concepts in algorithms and database systems." />
+            <InfoBillboard position={[-60, 8, -180]} rotation={[0, 0.5, 0]} title="My Internship" content="MERN Stack Intern. Developed full-stack modules and integrated REST APIs." />
+            <InfoBillboard position={[45, 8, -320]} rotation={[0, -0.4, 0]} title="Cybertron Technologies" content="Jr. Software Developer working on secure backend systems and RESTful APIs." />
+            <InfoBillboard position={[20, 12, -480]} rotation={[0, 1.2, 0]} title="Learning Era" content="Strengthened fundamentals in system design, databases, and backend architecture." />
+            <InfoBillboard position={[45, 8, -660]} rotation={[0, -0.2, 0]} title="Cybersecurity" content="Exploring secure coding practices, API protection strategies, authentication flows, and vulnerability awareness in backend systems." />
+            <InfoBillboard position={[-65, 10, -860]} rotation={[0, 0.4, 0]} title="Next Phase" content="Advancing toward cloud-native architectures, distributed systems, and high-performance backend engineering at scale" />
 
-            {/* Floating Finish Line */}
             <group position={[0, 10, -1000]}>
-                <Text fontSize={10} color="#fbbf24" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
-                    THE END?
-                </Text>
-                <Text position={[0, -8, 0]} fontSize={4} color="#fff" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">
-                    New Game+ Available
-                </Text>
+                <Text fontSize={10} color="#fbbf24" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">THE END?</Text>
+                <Text position={[0, -8, 0]} fontSize={4} color="#fff" font="https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf">New Game+ Available</Text>
             </group>
-
         </>
     );
 };
 
-
 const LifeJourney = () => {
     return (
         <div className="w-full h-screen bg-black relative">
-            {/* UI Overlay */}
             <div className="absolute top-6 left-6 z-50">
                 <Link to="/" className="px-6 py-3 bg-black/60 backdrop-blur rounded text-white border-2 border-white/20 hover:bg-white/10 hover:scale-105 transition-all font-['Press_Start_2P'] text-xs">
                     ← BASE
                 </Link>
             </div>
-
-            <div className="absolute bottom-10 w-full text-center z-50 pointer-events-none">
-                <p className="text-[10px] font-['Press_Start_2P'] text-yellow-400 animate-pulse drop-shadow-md">SCROLL TO ACCELERATE</p>
-            </div>
-
-            <Canvas shadows dpr={[1, 2]}> {/* DPR optimization */}
+            <Canvas shadows dpr={[1, 1.5]}> {/* Cap DPR for perf */}
                 <PerspectiveCamera makeDefault position={[0, 10, 20]} fov={60} />
-
                 <Suspense fallback={null}>
-                    <ScrollControls pages={15} damping={0.15}> {/* Balanced pages for tighter spacing */}
+                    <ScrollControls pages={15} damping={0.1}>
                         <Experience />
                     </ScrollControls>
                 </Suspense>
