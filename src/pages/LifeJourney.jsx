@@ -97,29 +97,29 @@ const VoxelTree = ({ position }) => {
 }
 
 const StreetLight = ({ position, rotation }) => (
-  <group position={position} rotation={rotation}>
-    <mesh position={[0, 5, 0]}>
-      <cylinderGeometry args={[0.2, 0.25, 10, 8]} />
-      <meshStandardMaterial color="#333" />
-    </mesh>
+    <group position={position} rotation={rotation}>
+        <mesh position={[0, 5, 0]}>
+            <cylinderGeometry args={[0.2, 0.25, 10, 8]} />
+            <meshStandardMaterial color="#333" />
+        </mesh>
 
-    <mesh position={[1, 9, 0]} rotation={[0, 0, Math.PI / 2]}>
-      <cylinderGeometry args={[0.15, 0.15, 2, 8]} />
-      <meshStandardMaterial color="#333" />
-    </mesh>
+        <mesh position={[1, 9, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.15, 0.15, 2, 8]} />
+            <meshStandardMaterial color="#333" />
+        </mesh>
 
-    <group position={[2, 8.8, 0]}>
-      <mesh>
-        <boxGeometry args={[0.5, 0.2, 0.5]} />
-        <meshStandardMaterial
-          color="#fbbf24"
-          emissive="#fbbf24"
-          emissiveIntensity={5}
-          toneMapped={false}
-        />
-      </mesh>
+        <group position={[2, 8.8, 0]}>
+            <mesh>
+                <boxGeometry args={[0.5, 0.2, 0.5]} />
+                <meshStandardMaterial
+                    color="#fbbf24"
+                    emissive="#fbbf24"
+                    emissiveIntensity={5}
+                    toneMapped={false}
+                />
+            </mesh>
+        </group>
     </group>
-  </group>
 );
 
 const InfoBillboard = forwardRef(({ position, title, content, rotation = [0, 0, 0] }, ref) => (
@@ -228,6 +228,9 @@ const Experience = () => {
     const { curve, tubeGeometry } = CurveRoad();
     const points = useMemo(() => curve.getPoints(100), [curve]); // Reduced point count
 
+    const { size } = useThree();
+    const isMobile = size.width < 768;
+
     useFrame((state) => {
         const offset = scroll.offset;
         const t = Math.min(0.999, offset);
@@ -242,11 +245,19 @@ const Experience = () => {
             const targetLook = lookAtPoint.clone().add(new THREE.Vector3(0, 7.1, 0));
             carRef.current.lookAt(targetLook);
 
-            const cameraOffset = tangent.clone().multiplyScalar(-18).add(new THREE.Vector3(0, 6, 0));
+            // --- Adaptive Mobile Camera ---
+            const distance = isMobile ? -25 : -18;
+            const height = isMobile ? 8 : 6;
+            const fov = isMobile ? 85 : 60;
+
+            state.camera.fov = fov;
+            state.camera.updateProjectionMatrix();
+
+            const cameraOffset = tangent.clone().multiplyScalar(distance).add(new THREE.Vector3(0, height, 0));
             const targetCamPos = carRef.current.position.clone().add(cameraOffset);
 
             state.camera.position.lerp(targetCamPos, 0.08);
-            state.camera.lookAt(carRef.current.position.clone().add(new THREE.Vector3(0, 5, 0)));
+            state.camera.lookAt(carRef.current.position.clone().add(new THREE.Vector3(0, isMobile ? 6 : 5, 0)));
         }
     });
 
@@ -376,7 +387,7 @@ const LifeJourney = () => {
     return (
         <div className="w-full h-screen bg-black relative">
             <div className="absolute top-6 left-6 z-50">
-                <Link to="/" className="px-6 py-3 bg-black/60 backdrop-blur rounded text-white border-2 border-white/20 hover:bg-white/10 hover:scale-105 transition-all font-['Press_Start_2P'] text-xs">
+                <Link to="/" className="px-4 md:px-6 py-2 md:py-3 bg-black/60 backdrop-blur rounded text-white border-2 border-white/20 hover:bg-white/10 transition-all font-['Press_Start_2P'] text-[10px] md:text-xs">
                     ← BASE
                 </Link>
             </div>

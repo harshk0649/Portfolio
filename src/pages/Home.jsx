@@ -158,23 +158,32 @@ const ScrollObjects = () => {
 
     const cloudsRef = useRef();
 
+    const { size } = useThree();
+    const isMobile = size.width < 768;
+
     useFrame((state) => {
         const r = scroll.offset;
 
+        // --- Viewport Aware Camera FOV ---
+        // Increase FOV on mobile to see more vertically
+        state.camera.fov = isMobile ? 75 : 50;
+        state.camera.updateProjectionMatrix();
+
         // --- Model Visibility & Positioning ---
 
-        // 🟢 STEVE (Overworld / Day - r < 0.2)
+        // 🟢 STEVE
         if (steveRef.current) {
-            const visible = r < 0.12; // Very early start only
-            // "A bit more right" - move towards X = 10
-            steveRef.current.position.x = THREE.MathUtils.lerp(steveRef.current.position.x, visible ? 10 : 35, 0.1);
+            const visible = r < 0.12;
+            const targetX = isMobile ? 2 : 10; // Center or right based on mobile
+            steveRef.current.position.x = THREE.MathUtils.lerp(steveRef.current.position.x, visible ? targetX : 35, 0.1);
             steveRef.current.visible = steveRef.current.position.x < 32;
         }
 
-        // 🟠 WOLF & CLOUDS (Nether / Mid - 0.2 < r < 0.8)
+        // 🟠 WOLF & CLOUDS
         if (wolfRef.current) {
-            const isActive = r >= 0.2 && r < 0.8;
-            wolfRef.current.position.x = THREE.MathUtils.lerp(wolfRef.current.position.x, isActive ? -4 : -35, 0.1);
+            const isActive = r >= 0.2 && r < 0.65;
+            const targetX = isMobile ? 0 : -10; // Center on mobile
+            wolfRef.current.position.x = THREE.MathUtils.lerp(wolfRef.current.position.x, isActive ? targetX : -35, 0.1);
             wolfRef.current.visible = wolfRef.current.position.x > -32;
         }
 
@@ -184,12 +193,11 @@ const ScrollObjects = () => {
             cloudsRef.current.visible = cloudsRef.current.position.y > -45;
         }
 
-        // 🟣 DRAGON (The End - r >= 0.8)
+        // 🟣 DRAGON
         if (dragonRef.current) {
-            const isActive = r >= 0.8;
-            // Dragon rises high enough to be seen but stays "grounded" below content
+            const isActive = r >= 0.65;
             dragonRef.current.position.y = THREE.MathUtils.lerp(dragonRef.current.position.y, isActive ? -3 : -60, 0.05);
-            dragonRef.current.position.z = THREE.MathUtils.lerp(dragonRef.current.position.z, isActive ? -20 : -80, 0.05);
+            dragonRef.current.position.z = THREE.MathUtils.lerp(dragonRef.current.position.z, isActive ? (isMobile ? -30 : -20) : -80, 0.05);
             dragonRef.current.visible = dragonRef.current.position.y > -58;
         }
     });
@@ -197,9 +205,9 @@ const ScrollObjects = () => {
     return (
         <group>
             {/* Final adjusted scales & base positions for transitions */}
-            <Steve ref={steveRef} position={[35, -8, -10]} scale={0.6} rotation={[0, -0.5, 0]} />
-            <Wolf ref={wolfRef} position={[-35, -4, -10]} scale={1} />
-            <Dragon ref={dragonRef} position={[0, -60, -80]} scale={0.15} />
+            <Steve ref={steveRef} position={[isMobile ? 0 : 35, -8.5, -10]} scale={0.6} rotation={[0, -0.5, 0]} />
+            <Wolf ref={wolfRef} position={[isMobile ? 0 : -35, -4, -10]} scale={1} />
+            <Dragon ref={dragonRef} position={[0, -60, -80]} scale={isMobile ? 0.12 : 0.15} />
 
             {/* Nether Decorative Clouds - Enhanced Placement */}
             <group ref={cloudsRef} position={[0, -50, 0]}>
@@ -247,36 +255,81 @@ const SectionHeader = ({ title }) => (
 
 const HeaderNav = ({ navigate }) => {
     const scroll = useScroll();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const scrollTo = (id) => {
         const el = document.getElementById(id);
         if (el && scroll.el) {
-            // Target the specific scrollable container of ScrollControls
-            const targetPos = el.offsetTop;
+            const headerHeight = 80;
+            const targetPos = el.offsetTop - headerHeight;
             scroll.el.scrollTo({ top: targetPos, behavior: 'smooth' });
+            setIsMenuOpen(false);
         }
     };
 
     const scrollToTop = () => {
         if (scroll.el) {
             scroll.el.scrollTo({ top: 0, behavior: 'smooth' });
+            setIsMenuOpen(false);
         }
     };
 
     return (
-        <div className="w-full flex justify-between items-center py-6 border-b border-white/10 mb-10 pointer-events-auto">
-            <div className="text-lg font-bold text-white drop-shadow-md cursor-pointer" onClick={scrollToTop}>Harsh.Dev</div>
-            <div className="flex gap-3 md:gap-6 text-[8px] md:text-[14px] uppercase tracking-wider items-center">
-                <button onClick={() => scrollTo('about')} className="hover:text-green-400">About</button>
-                <button onClick={() => scrollTo('skills')} className="hover:text-yellow-400">Skills</button>
-                <button onClick={() => scrollTo('projects')} className="hover:text-blue-400">Projects</button>
-                <button onClick={() => navigate('/resume')} className="hover:text-red-400">Resume</button>
-                <button onClick={() => navigate('/mylife')} className="px-3 py-1 bg-purple-600 rounded-sm hover:bg-purple-500 font-bold ml-2">
-                    My Journey
+        <nav className="fixed top-0 left-0 w-full z-[100] px-4 md:px-10 py-6 pointer-events-auto">
+            <div className="flex justify-between items-center bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-sm shadow-2xl">
+                <div
+                    className="text-lg md:text-xl font-bold text-white drop-shadow-md cursor-pointer hover:text-green-400 transition-all select-none"
+                    onClick={scrollToTop}
+                >
+                    HARSH<span className="text-green-500">.</span>DEV
+                </div>
+
+                {/* Desktop Nav */}
+                <div className="hidden lg:flex gap-8 text-[11px] uppercase tracking-widest items-center">
+                    <button onClick={() => scrollTo('about')} className="hover:text-green-400 transition-colors">About</button>
+                    <button onClick={() => scrollTo('skills')} className="hover:text-yellow-400 transition-colors">Skills</button>
+                    <button onClick={() => scrollTo('projects')} className="hover:text-blue-400 transition-colors">Projects</button>
+                    <button onClick={() => navigate('/resume')} className="hover:text-red-400 transition-colors">Resume</button>
+                    <button
+                        onClick={() => navigate('/mylife')}
+                        className="px-4 py-2 bg-purple-600 rounded-sm hover:bg-purple-500 font-bold transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)]"
+                    >
+                        THE JOURNEY
+                    </button>
+                </div>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="lg:hidden w-10 h-10 flex flex-col justify-center items-center gap-1.5 border border-white/20 rounded bg-black/40"
+                    aria-label="Toggle Menu"
+                >
+                    <div className={classNames("w-6 h-0.5 bg-white transition-all", isMenuOpen ? "rotate-45 translate-y-2" : "")}></div>
+                    <div className={classNames("w-6 h-0.5 bg-white transition-all", isMenuOpen ? "opacity-0" : "")}></div>
+                    <div className={classNames("w-6 h-0.5 bg-white transition-all", isMenuOpen ? "-rotate-45 -translate-y-2" : "")}></div>
                 </button>
             </div>
-        </div>
-    )
+
+            {/* Mobile Nav Overlay */}
+            <div className={classNames(
+                "lg:hidden fixed inset-x-4 top-24 bg-black/90 backdrop-blur-xl border border-white/10 p-8 rounded-sm transition-all duration-300 transform",
+                isMenuOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 -translate-y-4 invisible"
+            )}>
+                <div className="flex flex-col gap-8 text-center text-sm uppercase tracking-[0.2em]">
+                    <button onClick={() => scrollTo('about')} className="text-gray-300 hover:text-green-400">About</button>
+                    <button onClick={() => scrollTo('skills')} className="text-gray-300 hover:text-yellow-400">Skills</button>
+                    <button onClick={() => scrollTo('projects')} className="text-gray-300 hover:text-blue-400">Projects</button>
+                    <button onClick={() => navigate('/resume')} className="text-gray-300 hover:text-red-400">Resume</button>
+                    <button
+                        onClick={() => navigate('/mylife')}
+                        className="w-full py-4 bg-purple-600 rounded-sm text-white font-bold shadow-lg"
+                    >
+                        THE JOURNEY
+                    </button>
+                </div>
+            </div>
+        </nav>
+    );
 };
 
 
@@ -288,9 +341,9 @@ const HtmlContent = ({ navigate }) => {
             <HeaderNav navigate={navigate} />
 
             {/* HERO */}
-            <section id="hero" className="min-h-[70vh] flex flex-col justify-center">
+            <section id="hero" className="min-h-screen flex flex-col justify-center py-20">
                 <div className="flex flex-col">
-                    <h1 className="text-4xl md:text-8xl mb-6 text-white drop-shadow-[4px_4px_0_#000] leading-tight italic">
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl mb-6 text-white drop-shadow-[4px_4px_0_#000] leading-tight italic">
                         HARSH KHATRI
                     </h1>
                     <div className="text-sm md:text-xl bg-black/50 inline-block px-4 py-3 border-l-4 border-green-500 mb-8 max-w-fit">
@@ -306,12 +359,12 @@ const HtmlContent = ({ navigate }) => {
             </section>
 
             {/* ABOUT ME */}
-            <section id="about" className="py-20 min-h-[60vh]">
+            <section id="about" className="py-20 min-h-screen scroll-mt-24">
                 <SectionHeader title="My Info" />
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
                     <MinecraftCard variant="glass">
-                        <h3 className="text-sm text-green-400 mb-4">About Me</h3>
-                        <p className="text-sm leading-9 text-gray-200 font-sans">
+                        <h3 className="text-xs text-green-400 mb-4 tracking-widest uppercase">About Me</h3>
+                        <p className="text-xs sm:text-sm leading-relaxed sm:leading-9 text-gray-200 font-sans">
                             Hi, I’m Harsh Khatri — a Backend Engineer focused on building scalable and secure backend systems.
                             With hands-on experience in Java and Spring Boot, I develop RESTful APIs, implement authentication and authorization systems, and design efficient relational databases. I currently work at Cybertron Technologies Pvt. Ltd, where I contribute to backend services powering real business workflows.
                             I enjoy turning complex requirements into clean, maintainable backend architectures. Whether it’s RBAC systems, optimized SQL queries, or structured service-layer design, I aim to build systems that are reliable, scalable, and production-ready.
