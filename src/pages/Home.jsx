@@ -268,10 +268,9 @@ const HeaderNav = ({ navigate }) => {
             <div className="text-lg font-bold text-white drop-shadow-md cursor-pointer" onClick={scrollToTop}>Harsh.Dev</div>
             <div className="flex gap-3 md:gap-6 text-[8px] md:text-[14px] uppercase tracking-wider items-center">
                 <button onClick={() => scrollTo('about')} className="hover:text-green-400">About</button>
-                <button onClick={() => scrollTo('experience')} className="hover:text-orange-400">XP</button>
                 <button onClick={() => scrollTo('skills')} className="hover:text-yellow-400">Skills</button>
                 <button onClick={() => scrollTo('projects')} className="hover:text-blue-400">Projects</button>
-                <button onClick={() => scrollTo('contact')} className="hover:text-red-400">Contact</button>
+                <button onClick={() => navigate('/resume')} className="hover:text-red-400">Resume</button>
                 <button onClick={() => navigate('/mylife')} className="px-3 py-1 bg-purple-600 rounded-sm hover:bg-purple-500 font-bold ml-2">
                     My Journey
                 </button>
